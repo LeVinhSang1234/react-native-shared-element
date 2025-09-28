@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -11,6 +11,9 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		BFC911B82E886E2F002F3149 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BFC911B72E886E2F002F3149 /* AVFoundation.framework */; };
+		BFC911DA2E88962B002F3149 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BFC911D92E88962B002F3149 /* CoreMedia.framework */; };
+		BFDD65552E88F97000315CBB /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BFC911B92E886E34002F3149 /* AVKit.framework */; };
 		CFF43B12A712FBD8B694BE23 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
@@ -24,14 +27,64 @@
 		5DCACB8F33CDC322A6C60F78 /* libPods-ReactNativeSharedElement.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ReactNativeSharedElement.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = ReactNativeSharedElement/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = ReactNativeSharedElement/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		BFC911B52E886D94002F3149 /* CoreAudioTypes.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioTypes.framework; path = System/Library/Frameworks/CoreAudioTypes.framework; sourceTree = SDKROOT; };
+		BFC911B72E886E2F002F3149 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		BFC911B92E886E34002F3149 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
+		BFC911D92E88962B002F3149 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		BFC911012E87ED5D002F3149 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				helpers/AVPlayerViewController.m,
+				helpers/RCTVideoCache.m,
+				helpers/RCTVideoHelper.m,
+				helpers/RCTVideoRouteRegistry.mm,
+				RCTVideoManager.mm,
+				RCTVideoOverlay.m,
+				RCTVideoView.mm,
+				views/RCTVideoContainer.mm,
+				views/RCTVideoPoster.m,
+			);
+			target = 13B07F861A680F5B00A75B9A /* ReactNativeSharedElement */;
+		};
+		BFC911072E87EDB7002F3149 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"UIView+NavTitleCache.m",
+				"UIView+NearestVC.m",
+				"UIView+RNSScreenCheck.m",
+			);
+			target = 13B07F861A680F5B00A75B9A /* ReactNativeSharedElement */;
+		};
+		BFDD663C2E890E9C00315CBB /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				RCTNativeEarly.mm,
+				RNEarlyRegistry.m,
+				"UINavigationController+RNPopHook.m",
+				"UIViewController+RNBackLife.m",
+			);
+			target = 13B07F861A680F5B00A75B9A /* ReactNativeSharedElement */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		BFC910FD2E87EC71002F3149 /* Video */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BFC911012E87ED5D002F3149 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Video; sourceTree = "<group>"; };
+		BFC911022E87ED87002F3149 /* common */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BFC911072E87EDB7002F3149 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = common; sourceTree = "<group>"; };
+		BFDD65D42E890CFD00315CBB /* navigation */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (BFDD663C2E890E9C00315CBB /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = navigation; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		13B07F8C1A680F5B00A75B9A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BFC911DA2E88962B002F3149 /* CoreMedia.framework in Frameworks */,
+				BFC911B82E886E2F002F3149 /* AVFoundation.framework in Frameworks */,
+				BFDD65552E88F97000315CBB /* AVKit.framework in Frameworks */,
 				0C80B921A6F3F58F76C31292 /* libPods-ReactNativeSharedElement.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -54,6 +107,10 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				BFC911D92E88962B002F3149 /* CoreMedia.framework */,
+				BFC911B92E886E34002F3149 /* AVKit.framework */,
+				BFC911B72E886E2F002F3149 /* AVFoundation.framework */,
+				BFC911B52E886D94002F3149 /* CoreAudioTypes.framework */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				5DCACB8F33CDC322A6C60F78 /* libPods-ReactNativeSharedElement.a */,
 			);
@@ -70,6 +127,9 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				BFDD65D42E890CFD00315CBB /* navigation */,
+				BFC911022E87ED87002F3149 /* common */,
+				BFC910FD2E87EC71002F3149 /* Video */,
 				13B07FAE1A68108700A75B9A /* ReactNativeSharedElement */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -131,7 +191,7 @@
 				LastUpgradeCheck = 1210;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						LastSwiftMigration = 1120;
+						LastSwiftMigration = 1640;
 					};
 				};
 			};
@@ -191,9 +251,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ReactNativeSharedElement/Pods-ReactNativeSharedElement-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ReactNativeSharedElement/Pods-ReactNativeSharedElement-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -230,9 +294,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ReactNativeSharedElement/Pods-ReactNativeSharedElement-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-ReactNativeSharedElement/Pods-ReactNativeSharedElement-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -260,6 +328,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DV858SUZHZ;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = ReactNativeSharedElement/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -273,7 +342,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.react-native-shared-element";
 				PRODUCT_NAME = ReactNativeSharedElement;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -288,6 +357,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DV858SUZHZ;
 				INFOPLIST_FILE = ReactNativeSharedElement/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -300,7 +370,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.react-native-shared-element";
 				PRODUCT_NAME = ReactNativeSharedElement;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
