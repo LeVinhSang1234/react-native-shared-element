@@ -49,6 +49,7 @@ react {
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]
+    nodeExecutableAndArgs = ["/opt/homebrew/bin/node"]
 
     /* Autolinking */
     autolinkLibrariesWithApp()
@@ -116,4 +117,12 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    implementation "androidx.media3:media3-exoplayer:1.8.0"
+    implementation "androidx.media3:media3-ui:1.8.0"
+    implementation "androidx.media3:media3-common:1.8.0"
+    implementation "androidx.media3:media3-datasource-okhttp:1.8.0"
+    implementation "com.squareup.okhttp3:okhttp:5.1.0"
+    implementation "com.squareup.okhttp3:logging-interceptor:5.1.0"
+    implementation "com.squareup.okhttp3:okhttp-dnsoverhttps:5.1.0"
 }

@@ -47,7 +47,7 @@
     "type": "all",
     "jsSrcsDir": "natives",
     "android": {
-      "javaPackageName": "com.shareelement"
+      "javaPackageName": "com.reactnativesharedelement"
     },
     "ios": {
       "componentProvider": {

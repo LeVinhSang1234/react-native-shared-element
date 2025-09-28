@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
   root: {
     width: '100%',
     height: 300,
-    backgroundColor: 'red',
+    backgroundColor: 'blue',
     marginTop: 100,
   },
 });
