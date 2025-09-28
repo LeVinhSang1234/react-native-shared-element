@@ -1,4 +1,4 @@
-package com.reactnativesharedelement.video.helpers
+package com.shareelement.video.helpers
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -19,6 +19,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.facebook.react.bridge.ReactContext
+import com.reactnativesharedelement.video.helpers.RCTVideoLayoutUtils
 
 /**
  * Overlay Android tương đương iOS RCTVideoOverlay (không dùng AspectRatioFrameLayout).
@@ -57,28 +58,28 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
     // ---------- Gravity (map từ AVLayerVideoGravity) ----------
     fun applyAVLayerVideoGravity(aVLayerVideoGravity: Any?) {
         resizeModeStr =
-                when (aVLayerVideoGravity) {
-                    is String ->
-                            when (aVLayerVideoGravity) {
-                                "AVLayerVideoGravityResizeAspect" -> "contain"
-                                "AVLayerVideoGravityResizeAspectFill" -> "cover"
-                                "AVLayerVideoGravityResize" -> "fill"
-                                "aspect", "fit", "contain" -> "contain"
-                                "aspectFill", "cover" -> "cover"
-                                "fill", "stretch", "resize" -> "fill"
-                                "center" -> "center"
-                                else -> "contain"
-                            }
-                    is Int ->
-                            when (aVLayerVideoGravity) {
-                                0 -> "contain"
-                                1 -> "cover"
-                                2 -> "fill"
-                                3 -> "center"
-                                else -> "contain"
-                            }
-                    else -> "contain"
-                }
+            when (aVLayerVideoGravity) {
+                is String ->
+                    when (aVLayerVideoGravity) {
+                        "AVLayerVideoGravityResizeAspect" -> "contain"
+                        "AVLayerVideoGravityResizeAspectFill" -> "cover"
+                        "AVLayerVideoGravityResize" -> "fill"
+                        "aspect", "fit", "contain" -> "contain"
+                        "aspectFill", "cover" -> "cover"
+                        "fill", "stretch", "resize" -> "fill"
+                        "center" -> "center"
+                        else -> "contain"
+                    }
+                is Int ->
+                    when (aVLayerVideoGravity) {
+                        0 -> "contain"
+                        1 -> "cover"
+                        2 -> "fill"
+                        3 -> "center"
+                        else -> "contain"
+                    }
+                else -> "contain"
+            }
         requestLayout()
     }
 
@@ -92,12 +93,12 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
         if (frameCallback != null) return
         var cb: Choreographer.FrameCallback? = null
         cb =
-                Choreographer.FrameCallback {
-                    onTick()
-                    if (frameCallback === cb) {
-                        Choreographer.getInstance().postFrameCallback(cb)
-                    }
+            Choreographer.FrameCallback {
+                onTick()
+                if (frameCallback === cb) {
+                    Choreographer.getInstance().postFrameCallback(cb)
                 }
+            }
         frameCallback = cb
         Choreographer.getInstance().postFrameCallback(cb)
     }
@@ -118,13 +119,13 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
     private fun layoutChildByAspect(w: Int, h: Int) {
         val pv = overlayPlayerView ?: return
         val rect =
-                if (videoW > 0 && videoH > 0)
-                        RCTVideoLayoutUtils.computeChildRect(w, h, videoW, videoH, resizeModeStr)
-                else Rect(0, 0, w, h)
+            if (videoW > 0 && videoH > 0)
+                RCTVideoLayoutUtils.computeChildRect(w, h, videoW, videoH, resizeModeStr)
+            else Rect(0, 0, w, h)
 
         pv.measure(
-                MeasureSpec.makeMeasureSpec(rect.width(), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(rect.height(), MeasureSpec.EXACTLY)
+            MeasureSpec.makeMeasureSpec(rect.width(), MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec(rect.height(), MeasureSpec.EXACTLY)
         )
         pv.layout(rect.left, rect.top, rect.right, rect.bottom)
     }
@@ -132,13 +133,13 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
     // ================== API chính giống iOS ==================
     @OptIn(UnstableApi::class)
     fun moveToOverlay(
-            fromFrame: Rect, // pixel - toạ độ theo content/decor
-            targetFrame: Rect, // pixel - toạ độ theo content/decor
-            player: ExoPlayer,
-            aVLayerVideoGravity: Any? = null,
-            bgColor: Int? = null,
-            onTarget: (() -> Unit)? = null,
-            onCompleted: (() -> Unit)? = null
+        fromFrame: Rect, // pixel - toạ độ theo content/decor
+        targetFrame: Rect, // pixel - toạ độ theo content/decor
+        player: ExoPlayer,
+        aVLayerVideoGravity: Any? = null,
+        bgColor: Int? = null,
+        onTarget: (() -> Unit)? = null,
+        onCompleted: (() -> Unit)? = null
     ) {
         val root = getTargetRoot() ?: return
 
@@ -169,22 +170,22 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
 
         // child PlayerView (TextureView trên nhiều OEM; tắt shutter & giữ frame để tránh đen)
         overlayPlayerView =
-                PlayerView(context, null, 0).apply {
-                    useController = false
-                    setBackgroundColor(Color.TRANSPARENT)
-                    try {
-                        setShutterBackgroundColor(Color.TRANSPARENT)
-                    } catch (_: Throwable) {}
-                    try {
-                        setKeepContentOnPlayerReset(true)
-                    } catch (_: Throwable) {}
-                    elevation = DEFAULT_ELEV + 1f
-                    translationZ = DEFAULT_ELEV + 1f
-                    this.player = player
-                }
+            PlayerView(context, null, 0).apply {
+                useController = false
+                setBackgroundColor(Color.TRANSPARENT)
+                try {
+                    setShutterBackgroundColor(Color.TRANSPARENT)
+                } catch (_: Throwable) {}
+                try {
+                    setKeepContentOnPlayerReset(true)
+                } catch (_: Throwable) {}
+                elevation = DEFAULT_ELEV + 1f
+                translationZ = DEFAULT_ELEV + 1f
+                this.player = player
+            }
         addView(
-                overlayPlayerView,
-                LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+            overlayPlayerView,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         )
 
         // map gravity -> resizeModeStr (tự layout qua helper)
@@ -208,11 +209,11 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
             onTarget?.invoke()
 
             postDelayed(
-                    {
-                        onCompleted?.invoke()
-                        unmount()
-                    },
-                    100
+                {
+                    onCompleted?.invoke()
+                    unmount()
+                },
+                100
             )
         }
     }
@@ -253,11 +254,11 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
     // ================== Helpers ==================
     private fun getTargetRoot(): ViewGroup? {
         val act: Activity? =
-                when (val ctx = context) {
-                    is Activity -> ctx
-                    is ReactContext -> ctx.currentActivity
-                    else -> null
-                }
+            when (val ctx = context) {
+                is Activity -> ctx
+                is ReactContext -> ctx.currentActivity
+                else -> null
+            }
         // Ưu tiên android.R.id.content để nằm trên ReactRootView; fallback decorView
         val content = act?.findViewById<ViewGroup>(android.R.id.content)
         return content ?: (act?.window?.decorView as? ViewGroup)
@@ -272,19 +273,19 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
     }
 
     private fun animateRectViaLp(
-            root: ViewGroup,
-            overlay: View,
-            from: Rect,
-            to: Rect,
-            durationMs: Long,
-            onEnd: (() -> Unit)?
+        root: ViewGroup,
+        overlay: View,
+        from: Rect,
+        to: Rect,
+        durationMs: Long,
+        onEnd: (() -> Unit)?
     ) {
         val lp =
-                (overlay.layoutParams as? LayoutParams)
-                        ?: LayoutParams(from.width(), from.height()).also {
-                            overlay.layoutParams = it
-                            if (overlay.parent == null) root.addView(overlay, it)
-                        }
+            (overlay.layoutParams as? LayoutParams)
+                ?: LayoutParams(from.width(), from.height()).also {
+                    overlay.layoutParams = it
+                    if (overlay.parent == null) root.addView(overlay, it)
+                }
 
         // state đầu
         lp.width = from.width()
@@ -301,33 +302,33 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
         currentAnimator?.cancel()
 
         currentAnimator = ValueAnimator.ofObject(eval, Rect(from), Rect(to))
-                .apply {
-                    duration = durationMs
-                    interpolator = DecelerateInterpolator()
-                    addUpdateListener { va ->
-                        val r = va.animatedValue as Rect
-                        overlay.x = r.left.toFloat()
-                        overlay.y = r.top.toFloat()
-                        lp.width = r.width()
-                        lp.height = r.height()
-                        // root.updateViewLayout(overlay, lp)
-                        safeAddOrUpdate(root, overlay, lp)
-                        // đảm bảo nằm trên cùng trong suốt quá trình animate
-                        ensureOnTop(root, overlay)
-                    }
-                    addListener(
-                            object : AnimatorListenerAdapter() {
-                                override fun onAnimationStart(animation: Animator) {
-                                    ensureOnTop(root, overlay)
-                                }
-                                override fun onAnimationEnd(animation: Animator) {
-                                    overlay.setLayerType(LAYER_TYPE_NONE, null)
-                                    ensureOnTop(root, overlay)
-                                    onEnd?.invoke()
-                                }
-                            }
-                    )
+            .apply {
+                duration = durationMs
+                interpolator = DecelerateInterpolator()
+                addUpdateListener { va ->
+                    val r = va.animatedValue as Rect
+                    overlay.x = r.left.toFloat()
+                    overlay.y = r.top.toFloat()
+                    lp.width = r.width()
+                    lp.height = r.height()
+                    // root.updateViewLayout(overlay, lp)
+                    safeAddOrUpdate(root, overlay, lp)
+                    // đảm bảo nằm trên cùng trong suốt quá trình animate
+                    ensureOnTop(root, overlay)
                 }
+                addListener(
+                    object : AnimatorListenerAdapter() {
+                        override fun onAnimationStart(animation: Animator) {
+                            ensureOnTop(root, overlay)
+                        }
+                        override fun onAnimationEnd(animation: Animator) {
+                            overlay.setLayerType(LAYER_TYPE_NONE, null)
+                            ensureOnTop(root, overlay)
+                            onEnd?.invoke()
+                        }
+                    }
+                )
+            }
         currentAnimator?.start()
     }
 

@@ -1,10 +1,15 @@
 package com.reactnativesharedelement.video
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Rect
+import android.graphics.drawable.ColorDrawable
 import android.util.AttributeSet
+import android.util.Log
+import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.annotation.OptIn
@@ -20,6 +25,7 @@ import com.facebook.react.bridge.ReactContext
 import com.facebook.react.uimanager.UIManagerHelper
 import com.facebook.react.views.view.ReactViewGroup
 import com.reactnativesharedelement.video.helpers.*
+import com.shareelement.video.helpers.RCTVideoOverlay
 import kotlin.math.max
 
 import java.net.URL
@@ -35,12 +41,15 @@ class RCTVideoView : FrameLayout {
         clipChildren = true
         setBackgroundColor(android.graphics.Color.TRANSPARENT)
     }
+    private var overlay: RCTVideoOverlay? = null
+    private var otherView: RCTVideoView? = null
 
     // ===== Player =====
     internal var player: ExoPlayer? = null
     private var videoW = 0
     private var videoH = 0
     private var isLooping = false
+    private var isSharing = false
     private var currentSource: String? = null
 
     // ===== State =====
@@ -60,6 +69,7 @@ class RCTVideoView : FrameLayout {
     private var isProgressEnabled = false
     private var isOnLoadEnabled = false
     private var didEmitLoadStartForCurrentItem = false
+    private var shareTagElement: String? = null
 
     private var fullscreenDialog: FullscreenVideoDialog? = null
 
@@ -85,6 +95,7 @@ class RCTVideoView : FrameLayout {
     @OptIn(UnstableApi::class)
     private fun configure() {
         clipChildren = true
+        alpha = 0f
         setBackgroundColor(android.graphics.Color.BLACK)
         playerView = PlayerView(context, null, 0).apply {
             useController = false
@@ -166,6 +177,8 @@ class RCTVideoView : FrameLayout {
     // ===== Public props =====
     fun setSource(url: String?) {
         exitFullscreen()
+        val otherView = RCTVideoTag.getOtherViewForTag(this, shareTagElement)
+        if(otherView !== null) return
         if (!url.isNullOrBlank() && url != currentSource) loadSource(url)
     }
 
@@ -274,6 +287,18 @@ class RCTVideoView : FrameLayout {
     fun setVolumeFromCommand(volume: Double) {
         val v = volume.coerceIn(0.0, 1.0)
         player?.let { applyVolume(it, v.toFloat()) } ?: run {}
+    }
+
+    fun setShareTagElement(tag: String?) {
+        val newTag = tag?.trim()?.takeIf { it.isNotEmpty() }
+        val oldTag = shareTagElement
+        if (oldTag != null && oldTag != newTag) {
+            RCTVideoTag.removeView(this, oldTag)
+        }
+        shareTagElement = newTag
+        if (newTag != null) {
+            RCTVideoTag.registerView(this, newTag)
+        }
     }
 
     fun enterFullscreen() {
@@ -443,28 +468,174 @@ class RCTVideoView : FrameLayout {
     // ===== Lifecycle =====
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (!isBlurWindow) playerView.player = player
-        else isBlurWindow = false
+        if (isBlurWindow) {
+            isBlurWindow = false
+            alpha = 1f
+            return
+        }
+        playerView.player = player
         if (videoW > 0 && videoH > 0) applyAspectNow()
         updatePlayState()
+        if (shareTagElement != null) shareElement() else alpha = 1f
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        Log.d("RCTVideoView", "onDetachedFromWindow");
+
         if (isBlurWindow) cleanup()
+        else if(!isSharing) revertShareElement()
     }
 
-    fun dealloc() { isBlurWindow = true }
+    fun dealloc() {
+        if(!isSharing) revertShareElement()
+    }
 
     fun cleanup() {
+        RCTVideoTag.removeView(this, shareTagElement)
+        exitFullscreen()
+
+        tickers.stopProgress()
+        tickers.stopOnLoad()
+        player = null
+        currentSource = null
         playerView.player = null
         player?.release()
         player = null
-        exitFullscreen()
+        videoW = 0
+        videoH = 0
+        didEmitLoadStartForCurrentItem = false
+        lastIsBuffering = null
+        overlay?.unmount()
+        overlay = null
+        posterBitmap = null
     }
 
-    // Share element
-    fun initialize() {
+    // ===== Share Element (Android version swap iOS) =====
+    fun initialize() {}
 
+    // ===== Share Element (Android version swap iOS) =====
+    private fun shareElement() {
+        val other = RCTVideoTag.getOtherViewForTag(this, shareTagElement)
+        if (other == null) {
+            alpha = 1f
+            return
+        }
+        otherView = other
+        playerView.player = null
+        player?.release()
+        player = null
+        val movingPlayer = other.player ?: return
+        val fromRect = rectForShare(other, 0)
+        isSharing = true
+        other.isSharing = true
+        post {
+            val toRect = rectForShare(this)
+            alpha = 0f
+            other.alpha = 0f
+            other.playerView.player = null
+            val ov = overlay ?: RCTVideoOverlay(context).also { overlay = it }
+            val gravityAlias =
+                when (resizeModeStr.lowercase()) {
+                    "cover" -> "AVLayerVideoGravityResizeAspectFill"
+                    "fill", "stretch" -> "AVLayerVideoGravityResize"
+                    "center" -> "center"
+                    else -> "AVLayerVideoGravityResizeAspect"
+                }
+            val bgColor =
+                (other.background as? ColorDrawable)?.color
+                    ?: android.graphics.Color.BLACK
+
+            ov.applySharingAnimatedDuration(1000.0)
+            ov.applyAVLayerVideoGravity(gravityAlias)
+            ov.moveToOverlay(
+                fromFrame = fromRect,
+                targetFrame = toRect,
+                player = movingPlayer,
+                aVLayerVideoGravity = gravityAlias,
+                bgColor = bgColor,
+                onTarget = {
+                    playerView.player = movingPlayer
+                    player = movingPlayer
+                    applyLoop(movingPlayer)
+                    applyMuted(movingPlayer)
+                    applyAspectNow()
+                    setPaused(externallyPaused)
+                    alpha = 1f
+
+                    posterView.visibility = if(movingPlayer.currentPosition > 50L) GONE else VISIBLE
+                },
+                onCompleted = {
+                    isSharing = false
+                    other.isSharing = false
+                    otherView?.showPosterNeeded()
+                    overlay?.unmount()
+                    overlay = null
+                }
+            )
+        }
+    }
+
+    fun revertShareElement() {
+        val other = otherView ?: run { cleanup(); return }
+        val movingPlayer = player ?: run { cleanup(); return }
+        val fromRect = rectForShare(this, 0)
+        Log.d("RCTVideoView", fromRect.toString());
+        alpha = 0f
+        other.alpha = 0f
+
+        val ov = other.overlay ?: RCTVideoOverlay(other.context).also { other.overlay = it }
+        val gravityAlias =
+            when (resizeModeStr.lowercase()) {
+                "cover" -> "AVLayerVideoGravityResizeAspectFill"
+                "fill", "stretch" -> "AVLayerVideoGravityResize"
+                "center" -> "center"
+                else -> "AVLayerVideoGravityResizeAspect"
+            }
+        val bgColor = (other.background as? ColorDrawable)?.color ?: android.graphics.Color.BLACK
+        other.post {
+            val toRect = other.rectForShare(other, 0)
+
+            ov.applySharingAnimatedDuration(1000.0)
+            ov.applyAVLayerVideoGravity(gravityAlias)
+
+            ov.moveToOverlay(
+                fromFrame = fromRect,
+                targetFrame = toRect,
+                player = movingPlayer,
+                aVLayerVideoGravity = gravityAlias,
+                bgColor = bgColor,
+                onTarget = {
+                    other.playerView.player = movingPlayer
+                    other.player = movingPlayer
+                    other.setPaused(other.externallyPaused)
+                    other.applyLoop(other.player!!)
+                    other.applyMuted(other.player!!)
+                    other.alpha = 1f
+                },
+                onCompleted = {
+                    other.overlay?.unmount()
+                    other.overlay = null
+                    cleanup()
+                }
+            )
+        }
+    }
+
+
+    private fun findRoot(): ViewGroup? {
+        val act = (context as? ReactContext)?.currentActivity ?: (context as? android.app.Activity)
+        return act?.findViewById(android.R.id.content) ?: (act?.window?.decorView as? ViewGroup)
+    }
+
+    private fun rectForShare(v: View, extraTopPx: Int = 0): Rect {
+        val root = findRoot() ?: return Rect(0, 0, 0, 0)
+        val viewLoc = IntArray(2)
+        val rootLoc = IntArray(2)
+        v.getLocationOnScreen(viewLoc)
+        root.getLocationOnScreen(rootLoc)
+        val left = viewLoc[0] - rootLoc[0]
+        val top = viewLoc[1] - rootLoc[1] + extraTopPx
+        return Rect(left, top, left + v.width, top + v.height)
     }
 }

@@ -104,6 +104,11 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
         if (value) view.enterFullscreen() else view.exitFullscreen()
     }
 
+    @ReactProp(name = "shareTagElement")
+    fun setShareTagElement(view: RCTVideoView, value: String?) {
+        view.setShareTagElement(value) // sẽ auto register/unregister trong setter
+    }
+
     @ReactProp(name = "cacheMaxSize", defaultInt = 300)
     fun setCacheMaxSize(view: RCTVideoView, sizeMB: Int) {
         if (sizeMB != lastCacheSizeMB) {
