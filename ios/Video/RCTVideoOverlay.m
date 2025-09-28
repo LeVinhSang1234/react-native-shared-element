@@ -1,0 +1,134 @@
+//
+//  RCTVideoOverlay.m
+//  ReactNativeSharedElement
+//
+//  Created by Sang Lv on 28/9/25.
+//
+
+#import "RCTVideoOverlay.h"
+#import "RCTVideoHelper.h"
+
+/// Default constants
+static const double kDefaultSharingDuration   = 0.35;   // seconds
+static const double kDefaultCompletionDelay   = 0.15;    // seconds
+
+@interface RCTVideoOverlay ()
+@property (nonatomic, strong) CADisplayLink *displayLink;
+@property (nonatomic, assign) AVLayerVideoGravity videoGravity;
+@property (nonatomic, strong) AVPlayerLayer *playerLayer;
+@end
+
+@implementation RCTVideoOverlay
+
+- (instancetype)init {
+  if (self = [super init]) {
+    _sharingAnimatedDuration = kDefaultSharingDuration;
+    _videoGravity = AVLayerVideoGravityResizeAspect;
+    self.hidden = YES;
+  }
+  return self;
+}
+
+#pragma mark - Apply props
+
+- (void)applyAVLayerVideoGravity:(AVLayerVideoGravity)gravity {
+  if (gravity) {
+    _videoGravity = gravity;
+  }
+}
+
+- (void)applySharingAnimatedDuration:(double)durationMs {
+  double duration = (durationMs <= 0) ? kDefaultSharingDuration : durationMs / 1000.0;
+  if (duration != _sharingAnimatedDuration) {
+    _sharingAnimatedDuration = duration;
+  }
+}
+
+#pragma mark - CADisplayLink ticking
+
+- (void)startTicking {
+  if (_displayLink) return;
+  _displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(_onTick)];
+  [_displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+}
+
+- (void)stopTicking {
+  [_displayLink invalidate];
+  _displayLink = nil;
+}
+
+- (void)_onTick {
+  CALayer *presentation = self.layer.presentationLayer;
+  if (!presentation) return;
+  
+  CGRect liveBounds = presentation.bounds;
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+  _playerLayer.frame = (CGRect){CGPointZero, liveBounds.size};
+  [CATransaction commit];
+}
+
+#pragma mark - Overlay animation
+
+- (void)moveToOverlay:(CGRect)fromFrame
+           tagetFrame:(CGRect)toFrame
+          playerLayer:(AVPlayerLayer *)playerLayer
+          fromBgColor:(UIColor *)fromBgColor
+            toBgColor:(UIColor *)toBgColor
+             willMove:(void (^)(void))willMove
+             onTarget:(void (^)(void))onTarget
+          onCompleted:(void (^)(void))onCompleted
+{
+  UIWindow *win = [RCTVideoHelper getTargetWindow];
+  if (!win) return;
+  [self unmount];
+  self.frame = fromFrame;
+  self.clipsToBounds = YES;
+  self.backgroundColor = fromBgColor ?: UIColor.clearColor;
+  _playerLayer = playerLayer;
+  [self.layer addSublayer:_playerLayer];
+  
+  [win addSubview:self];
+  [win bringSubviewToFront:self];
+  
+  [self startTicking];
+  if(willMove) willMove();
+  self.hidden = NO;
+  
+  __weak __typeof__(self) weakSelf = self;
+  [UIView animateWithDuration:_sharingAnimatedDuration
+                        delay:0
+                      options:UIViewAnimationOptionCurveEaseInOut | UIViewAnimationOptionBeginFromCurrentState
+                   animations:^{
+    weakSelf.frame = toFrame;
+    weakSelf.backgroundColor = toBgColor ?: UIColor.clearColor;
+  } completion:^(BOOL finished) {
+    __strong __typeof__(weakSelf) self = weakSelf;
+    if (!self || !finished) return;
+    [self _onTick];
+    [self stopTicking];
+    
+    if (onTarget) onTarget();
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                                 (int64_t)(kDefaultCompletionDelay * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+      if (onCompleted) onCompleted();
+      weakSelf.backgroundColor = fromBgColor ?: UIColor.clearColor;
+      [self unmount];
+    });
+  }];
+}
+
+#pragma mark - Cleanup
+
+- (void)unmount {
+  if (_playerLayer) {
+    [_playerLayer removeFromSuperlayer];
+    _playerLayer = nil;
+  }
+  [self removeFromSuperview];
+  [self stopTicking];
+}
+
+@end
