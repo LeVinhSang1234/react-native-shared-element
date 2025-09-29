@@ -1,4 +1,4 @@
-package com.shareelement.video.helpers
+package com.reactnativesharedelement.video.helpers
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -14,12 +14,10 @@ import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
-import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.facebook.react.bridge.ReactContext
-import com.reactnativesharedelement.video.helpers.RCTVideoLayoutUtils
 
 /**
  * Overlay Android tương đương iOS RCTVideoOverlay (không dùng AspectRatioFrameLayout).
@@ -133,42 +131,23 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
     // ================== API chính giống iOS ==================
     @OptIn(UnstableApi::class)
     fun moveToOverlay(
-        fromFrame: Rect, // pixel - toạ độ theo content/decor
-        targetFrame: Rect, // pixel - toạ độ theo content/decor
+        fromFrame: Rect,
+        targetFrame: Rect,
         player: ExoPlayer,
-        aVLayerVideoGravity: Any? = null,
         bgColor: Int? = null,
         onTarget: (() -> Unit)? = null,
         onCompleted: (() -> Unit)? = null
     ) {
         val root = getTargetRoot() ?: return
-
-        // dọn state cũ
         unmount()
 
-        // lưu player + kích thước video nếu có
         this.player = player
-        player.videoSize.let { vs: VideoSize ->
-            val w = vs.width
-            val h = (vs.height * vs.pixelWidthHeightRatio).toInt()
-            if (w > 0 && h > 0) {
-                videoW = w
-                videoH = h
-            } else {
-                videoW = 0
-                videoH = 0
-            }
-        }
-
-        // init container overlay với fromFrame
         val lp = LayoutParams(fromFrame.width(), fromFrame.height())
         layoutParams = lp
         x = fromFrame.left.toFloat()
         y = fromFrame.top.toFloat()
         setBackgroundColor(bgColor ?: Color.TRANSPARENT)
         clipChildren = true
-
-        // child PlayerView (TextureView trên nhiều OEM; tắt shutter & giữ frame để tránh đen)
         overlayPlayerView =
             PlayerView(context, null, 0).apply {
                 useController = false
@@ -188,19 +167,12 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         )
 
-        // map gravity -> resizeModeStr (tự layout qua helper)
-        applyAVLayerVideoGravity(aVLayerVideoGravity)
-
-        // add vào root và đảm bảo luôn ở top
         if (parent == null) root.addView(this, lp)
-        // root.updateViewLayout(this, lp)
         safeAddOrUpdate(root, this, lp)
         ensureOnTop(root, this)
 
-        // tick để child bám theo bounds trong lúc animate
         startTicking()
-        onTick() // layout ngay frame đầu
-        // animate position + size (updateViewLayout mỗi frame)
+        onTick()
         animateRectViaLp(root, this, fromFrame, targetFrame, sharingAnimatedDurationMs) {
             // đảm bảo layout lần cuối
             onTick()

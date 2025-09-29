@@ -17,6 +17,7 @@ export default function Home() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         shareTagElement="Video"
+        sharingAnimatedDuration={1000}
       >
         <View style={{ flex: 1 }}>
           <Text
@@ -46,5 +47,6 @@ const styles = StyleSheet.create({
   root: {
     height: 400,
     width: '100%',
+    backgroundColor: 'red',
   },
 });

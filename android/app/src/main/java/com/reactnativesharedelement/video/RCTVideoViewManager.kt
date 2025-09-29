@@ -26,11 +26,7 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
 
     // ===== Children handling =====
     override fun addView(parent: RCTVideoView, child: View, index: Int) {
-        val params = child.layoutParams ?: FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT
-        )
-        parent.videoContainer.addView(child, index, params)
+        parent.videoContainer.addView(child, index)
     }
 
     override fun removeViewAt(parent: RCTVideoView, index: Int) {
@@ -107,6 +103,11 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
     @ReactProp(name = "shareTagElement")
     fun setShareTagElement(view: RCTVideoView, value: String?) {
         view.setShareTagElement(value) // sẽ auto register/unregister trong setter
+    }
+
+    @ReactProp(name = "sharingAnimatedDuration", defaultFloat = 0f)
+    fun setSharingAnimatedDuration(view: RCTVideoView, value: Float) {
+        view.setSharingAnimatedDuration(value)
     }
 
     @ReactProp(name = "cacheMaxSize", defaultInt = 300)

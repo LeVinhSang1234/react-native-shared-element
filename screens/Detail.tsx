@@ -13,6 +13,7 @@ export default function Detail() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         shareTagElement="Video"
+        sharingAnimatedDuration={1500}
       >
         <Text>asdasdadsa</Text>
       </Video>
