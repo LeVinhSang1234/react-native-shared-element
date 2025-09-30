@@ -8,6 +8,7 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Rect
+import android.util.Log
 import android.view.Choreographer
 import android.view.View
 import android.view.ViewGroup
@@ -19,20 +20,11 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.facebook.react.bridge.ReactContext
 
-/**
- * Overlay Android tương đương iOS RCTVideoOverlay (không dùng AspectRatioFrameLayout).
- * - Tự layout PlayerView con qua RCTVideoLayoutUtils để giữ tỉ lệ
- * (contain/cover/fill/center/center).
- * - Animate cả vị trí + kích thước bằng ValueAnimator (updateViewLayout mỗi frame).
- * - Luôn đảm bảo overlay nằm trên cùng (elevation + translationZ + bringToFront).
- */
 class RCTVideoOverlay(context: Context) : FrameLayout(context) {
 
-    // ===== Config (theo iOS) =====
-    private var sharingAnimatedDurationMs: Long = 350L
-    private var resizeModeStr: String = "contain" // contain|cover|fill|center
+    var sharingAnimatedDurationMs: Long = 100L
+    var resizeModeStr: String = "contain" // contain|cover|fill|center
 
-    // ===== Ticking (tương đương CADisplayLink) =====
     private var frameCallback: Choreographer.FrameCallback? = null
 
     // ===== Runtime state =====
@@ -52,40 +44,6 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
         elevation = DEFAULT_ELEV
         translationZ = DEFAULT_ELEV
     }
-
-    // ---------- Gravity (map từ AVLayerVideoGravity) ----------
-    fun applyAVLayerVideoGravity(aVLayerVideoGravity: Any?) {
-        resizeModeStr =
-            when (aVLayerVideoGravity) {
-                is String ->
-                    when (aVLayerVideoGravity) {
-                        "AVLayerVideoGravityResizeAspect" -> "contain"
-                        "AVLayerVideoGravityResizeAspectFill" -> "cover"
-                        "AVLayerVideoGravityResize" -> "fill"
-                        "aspect", "fit", "contain" -> "contain"
-                        "aspectFill", "cover" -> "cover"
-                        "fill", "stretch", "resize" -> "fill"
-                        "center" -> "center"
-                        else -> "contain"
-                    }
-                is Int ->
-                    when (aVLayerVideoGravity) {
-                        0 -> "contain"
-                        1 -> "cover"
-                        2 -> "fill"
-                        3 -> "center"
-                        else -> "contain"
-                    }
-                else -> "contain"
-            }
-        requestLayout()
-    }
-
-    // ---------- Duration ----------
-    fun applySharingAnimatedDuration(durationMs: Double) {
-        sharingAnimatedDurationMs = (if (durationMs < 0) 350.0 else durationMs).toLong()
-    }
-
     // ---------- DisplayLink ----------
     fun startTicking() {
         if (frameCallback != null) return
@@ -142,6 +100,13 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
         unmount()
 
         this.player = player
+
+        val size = player.videoSize
+        if (size.width > 0 && size.height > 0) {
+            videoW = size.width
+            videoH = size.height
+        }
+
         val lp = LayoutParams(fromFrame.width(), fromFrame.height())
         layoutParams = lp
         x = fromFrame.left.toFloat()
@@ -174,7 +139,6 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
         startTicking()
         onTick()
         animateRectViaLp(root, this, fromFrame, targetFrame, sharingAnimatedDurationMs) {
-            // đảm bảo layout lần cuối
             onTick()
             stopTicking()
             ensureOnTop(root, this)
@@ -183,9 +147,8 @@ class RCTVideoOverlay(context: Context) : FrameLayout(context) {
             postDelayed(
                 {
                     onCompleted?.invoke()
-                    unmount()
                 },
-                100
+                10
             )
         }
     }

@@ -10,7 +10,7 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { type MeasureOnSuccessCallback } from 'react-native';
+import { StyleSheet, type MeasureOnSuccessCallback } from 'react-native';
 import { preloadVideoSource } from './utils';
 
 type TNativeRef = React.ComponentRef<typeof VideoNativeComponent>;
@@ -37,6 +37,7 @@ export interface VideoProps
     | 'posterResizeMode'
     | 'cacheMaxSize'
     | 'fullscreenMode'
+    | 'backgroundColor'
   > {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   posterResizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
@@ -91,6 +92,11 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
   const _source = useMemo(() => preloadVideoSource(source ?? ''), [source]);
   const _poster = useMemo(() => preloadVideoSource(poster ?? ''), [poster]);
 
+  const bg = useMemo(
+    () => StyleSheet.flatten(p.style)?.backgroundColor,
+    [p.style],
+  );
+
   return (
     <VideoNativeComponent
       {...p}
@@ -102,6 +108,7 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
       progressInterval={progressInterval}
       volume={volume}
       cacheMaxSize={config.cacheMaxSize}
+      backgroundColor={bg as string}
     />
   );
 });

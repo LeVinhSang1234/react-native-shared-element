@@ -17,33 +17,16 @@ export default function Home() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         shareTagElement="Video"
-        sharingAnimatedDuration={1000}
-      >
-        <View style={{ flex: 1 }}>
-          <Text
-            style={{ color: 'white', width: '100%', backgroundColor: 'red' }}
-          >
-            asdasdadádasd ádasd ádsad ádasd ádasd áda đa ấ ádassa asdasdadádasd
-            ádasd ádsad ádasd ádasd áda đa ấ ádassa
-          </Text>
-          <Pressable
-            onPress={() => {
-              refVideo.current?.presentFullscreenPlayer();
-            }}
-          >
-            <Text style={{ color: 'white' }}>Fullscreen</Text>
-          </Pressable>
-          <Pressable onPress={() => navigation.navigate('Detail' as never)}>
-            <Text style={{ color: 'white' }}>Goto Detail</Text>
-          </Pressable>
-        </View>
-      </Video>
+      />
+      <Pressable onPress={() => navigation.navigate('Detail' as never)}>
+        <Text style={{ color: 'white' }}>Goto Detail</Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: 'black' },
+  flex: { flex: 1 },
   root: {
     height: 400,
     width: '100%',

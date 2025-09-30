@@ -13,10 +13,7 @@ export default function Detail() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         shareTagElement="Video"
-        sharingAnimatedDuration={1500}
-      >
-        <Text>asdasdadsa</Text>
-      </Video>
+      />
       <TouchableOpacity onPress={navigation.goBack}>
         <Text>Goback</Text>
       </TouchableOpacity>
@@ -26,9 +23,9 @@ export default function Detail() {
 
 const styles = StyleSheet.create({
   root: {
-    width: '100%',
+    width: '80%',
     height: 300,
-    backgroundColor: 'blue',
+    backgroundColor: 'red',
     marginTop: 100,
   },
 });

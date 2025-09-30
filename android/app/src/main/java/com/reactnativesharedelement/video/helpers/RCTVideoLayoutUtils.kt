@@ -5,12 +5,6 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 object RCTVideoLayoutUtils {
-
-    fun keepAspect(resizeModeStr: String): Boolean {
-        val mode = resizeModeStr.lowercase()
-        return mode != "stretch" && mode != "fill"
-    }
-
     fun computeChildRect(
             containerW: Int,
             containerH: Int,
