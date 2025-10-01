@@ -354,26 +354,6 @@ using namespace facebook::react;
   self.nav = nil;
 }
 
-#pragma mark - Back swipe
-- (void)_returnPlayerToOtherIfNeeded {
-  if (_otherView) {
-    [_otherView.videoManager adoptPlayerFromManager:_videoManager];
-    [_videoManager detachPlayer];
-    
-    _otherView.hidden = NO;
-    [_otherView createPlayerLayerIfNeeded];
-    [_otherView setNeedsLayout];
-    [_otherView layoutIfNeeded];
-    
-    Float64 cur = CMTimeGetSeconds(_otherView.videoManager.player.currentTime);
-    if (cur > 0.05) {
-      _otherView.videoPoster.hidden = YES;
-    }
-    [self willUnmount];
-    [self unmount];
-  }
-}
-
 - (void)_handlePopGesture:(UIGestureRecognizer *)gr {
   if (!_isFocused) return;
   
@@ -411,6 +391,27 @@ using namespace facebook::react;
       break;
   }
 }
+
+#pragma mark - Back swipe
+- (void)_returnPlayerToOtherIfNeeded {
+  if (_otherView) {
+    [_otherView.videoManager adoptPlayerFromManager:_videoManager];
+    [_videoManager detachPlayer];
+    
+    _otherView.hidden = NO;
+    [_otherView createPlayerLayerIfNeeded];
+    [_otherView setNeedsLayout];
+    [_otherView layoutIfNeeded];
+    
+    Float64 cur = CMTimeGetSeconds(_otherView.videoManager.player.currentTime);
+    if (cur > 0.05) {
+      _otherView.videoPoster.hidden = YES;
+    }
+    [self willUnmount];
+    [self unmount];
+  }
+}
+
 
 #pragma mark - Share Element
 - (void)shareElement {

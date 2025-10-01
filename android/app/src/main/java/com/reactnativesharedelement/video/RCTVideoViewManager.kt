@@ -143,7 +143,6 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
 
     override fun receiveCommand(view: RCTVideoView, commandId: String, args: ReadableArray?) {
         when (commandId) {
-            "initialize" -> view.initialize()
             "setSeekCommand" -> {
                 val sec = args?.getDouble(0) ?: 0.0
                 view.setSeekFromCommand(sec)
@@ -156,6 +155,8 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
                 val vol = args?.getDouble(0) ?: 1.0
                 view.setVolumeFromCommand(vol)
             }
+            "initialize" -> view.initialize()
+            "prepareForRecycle" -> view.revertShareElement()
             "presentFullscreenPlayer" -> {
                 view.enterFullscreen()
             }
