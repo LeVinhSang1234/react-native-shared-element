@@ -7,6 +7,7 @@
 
 #import "RCTVideoManager.h"
 #import "RCTVideoHelper.h"
+#import "RCTViewHelper.h"
 #import "AVPlayerViewController.h"
 
 static NSString * const kResizeModeContain = @"contain";
@@ -17,7 +18,6 @@ static NSString * const kResizeModeCenter  = @"center";
 @interface RCTVideoManager ()
 
 // React props state
-@property (nonatomic, copy) NSString *source;
 @property (nonatomic, copy) NSString *resizeMode;
 @property (nonatomic, assign) BOOL loop;
 @property (nonatomic, assign) BOOL muted;
@@ -405,7 +405,7 @@ static NSString * const kResizeModeCenter  = @"center";
 
 - (void)enterFullscreen {
   if (!_player) return;
-  UIViewController *rootVC = [RCTVideoHelper getRootViewController];
+  UIViewController *rootVC = [RCTViewHelper getRootViewController];
   
   
   CustomPlayerViewController *playerVC = [CustomPlayerViewController new];
@@ -431,7 +431,7 @@ static NSString * const kResizeModeCenter  = @"center";
 }
 
 - (void)exitFullscreen {
-  UIViewController *rootVC = [RCTVideoHelper getRootViewController];
+  UIViewController *rootVC = [RCTViewHelper getRootViewController];
   [rootVC dismissViewControllerAnimated:YES completion:nil];
 }
 

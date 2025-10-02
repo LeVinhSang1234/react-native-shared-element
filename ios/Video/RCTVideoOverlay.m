@@ -6,7 +6,7 @@
 //
 
 #import "RCTVideoOverlay.h"
-#import "RCTVideoHelper.h"
+#import "RCTViewHelper.h"
 
 /// Default constants
 static const double kDefaultSharingDuration   = 0.35;   // seconds
@@ -22,9 +22,9 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
 
 - (instancetype)init {
   if (self = [super init]) {
+    self.hidden = YES;
     _sharingAnimatedDuration = kDefaultSharingDuration;
     _videoGravity = AVLayerVideoGravityResizeAspect;
-    self.hidden = YES;
   }
   return self;
 }
@@ -79,7 +79,7 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
              onTarget:(void (^)(void))onTarget
           onCompleted:(void (^)(void))onCompleted
 {
-  UIWindow *win = [RCTVideoHelper getTargetWindow];
+  UIWindow *win = [RCTViewHelper getTargetWindow];
   if (!win) return;
   [self unmount];
   self.frame = fromFrame;
@@ -129,6 +129,7 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
   }
   [self removeFromSuperview];
   [self stopTicking];
+  self.hidden = YES;
 }
 
 @end

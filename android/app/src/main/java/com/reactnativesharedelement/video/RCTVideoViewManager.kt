@@ -2,12 +2,12 @@ package com.reactnativesharedelement.video
 
 import android.graphics.Color
 import android.view.View
+import androidx.core.graphics.toColorInt
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.reactnativesharedelement.video.helpers.HttpStack
-import androidx.core.graphics.toColorInt
 
 class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
 
@@ -111,16 +111,14 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
         view.setSharingAnimatedDuration(value)
     }
 
-    @ReactProp(name = "backgroundColor", customType = "Color")
-    fun setBackgroundColor(view: RCTVideoView, colorStr: String?) {
+    @ReactProp(name = "bgColor", customType = "Color")
+    fun setBgColor(view: RCTVideoView, colorStr: String?) {
         if (!colorStr.isNullOrEmpty()) {
             try {
                 val colorInt = colorStr.toColorInt()
-                view.setVideoBackgroundColor(colorInt)
-                view.setBackgroundColor(colorInt)
+                view.setBgColor(colorInt)
             } catch (_: IllegalArgumentException) {
-                view.setVideoBackgroundColor(Color.BLACK)
-                view.setBackgroundColor(Color.BLACK)
+                view.setBgColor(Color.BLACK)
             }
         } else {
             view.setVideoBackgroundColor(Color.BLACK)
@@ -134,10 +132,7 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
             lastCacheSizeMB = sizeMB
             val ctx = view.context
             HttpStack.reset()
-            HttpStack.get(
-                ctx,
-                HttpStack.Options(cacheSizeBytes = sizeMB.toLong() * 1024 * 1024)
-            )
+            HttpStack.get(ctx, HttpStack.Options(cacheSizeBytes = sizeMB.toLong() * 1024 * 1024))
         }
     }
 
@@ -167,11 +162,11 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
     }
 
     override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> =
-        mutableMapOf(
-            "onLoadStart" to mutableMapOf("registrationName" to "onLoadStart"),
-            "onLoad" to mutableMapOf("registrationName" to "onLoad"),
-            "onProgress" to mutableMapOf("registrationName" to "onProgress"),
-            "onError" to mutableMapOf("registrationName" to "onError"),
-            "onBuffering" to mutableMapOf("registrationName" to "onBuffering")
-        )
+            mutableMapOf(
+                    "onLoadStart" to mutableMapOf("registrationName" to "onLoadStart"),
+                    "onLoad" to mutableMapOf("registrationName" to "onLoad"),
+                    "onProgress" to mutableMapOf("registrationName" to "onProgress"),
+                    "onError" to mutableMapOf("registrationName" to "onError"),
+                    "onBuffering" to mutableMapOf("registrationName" to "onBuffering")
+            )
 }

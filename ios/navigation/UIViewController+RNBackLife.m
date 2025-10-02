@@ -110,6 +110,14 @@ static inline void rn_setFlag(id self, void *key, BOOL v) {
     rn_setFlag(self, kWillPopFiredKey, YES);
     for (RNBackBlock block in self.rn_onWillPopBlocks) if (block) block();
   }
+  id<UIViewControllerTransitionCoordinator> tc = self.transitionCoordinator;
+  if (tc) {
+    [tc animateAlongsideTransition:nil completion:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
+      if (!ctx.isCancelled) {
+        for (RNBackBlock block in self.rn_onDidPopBlocks) if (block) block();
+      }
+    }];
+  }
 }
 
 - (void)rn_viewDidDisappear_back:(BOOL)animated {

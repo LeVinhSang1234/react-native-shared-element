@@ -11,6 +11,7 @@
 #import "RCTVideoManager.h"
 #import "RCTVideoPoster.h"
 #import "RCTVideoHelper.h"
+#import "RCTViewHelper.h"
 #import "UIView+NavTitleCache.h"
 
 #import <react/renderer/components/shareelement/Props.h>
@@ -29,6 +30,7 @@ using namespace facebook::react;
 @interface RCTVideoView ()
 @property (nonatomic, assign) BOOL isFullscreen;
 @property (nonatomic, assign) BOOL isPrepareForRecycle;
+@property (nonatomic, assign) BOOL isWillPop;
 
 @property (nonatomic, strong) RCTVideoPoster *videoPoster;
 @property (nonatomic, strong) RCTVideoManager *videoManager;
@@ -113,12 +115,15 @@ using namespace facebook::react;
 }
 
 - (void)prepareForRecycle {
+  _isPrepareForRecycle = YES;
   [super prepareForRecycle];
-  if(!_isSharing) {
-    [self _returnPlayerToOtherIfNeeded];
-    [self unmount];
-  };
+  if(!_isSharing) [self _returnPlayerToOtherIfNeeded];
   [self willUnmount];
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                               (int64_t)(0.1 * NSEC_PER_SEC)),
+                 dispatch_get_main_queue(), ^{
+    if(!self.isWillPop) [self unmount];
+  });
 }
 
 - (void)willUnmount {
@@ -132,10 +137,12 @@ using namespace facebook::react;
   [_videoManager unmount];
   [_videoOverlay unmount];
   
+  self.hidden = YES;
   _nav = nil;
   _otherView = nil;
   _isFocused = NO;
   _isSharing = NO;
+  _isWillPop = NO;
 }
 
 #pragma mark - Window Lifecycle
@@ -162,6 +169,7 @@ using namespace facebook::react;
   [self createPlayerLayerIfNeeded];
   if(!_shareTagElement) {
     self.hidden = NO;
+    [self showPosterNeeded];
   } else [self shareElement];
 }
 
@@ -192,6 +200,8 @@ using namespace facebook::react;
   NSString *newTag = p.shareTagElement.empty() ? nil : [NSString stringWithUTF8String:p.shareTagElement.c_str()];
   if (![newTag isEqualToString:_shareTagElement]) {
     [self unregisterRouteIfNeeded];
+    
+    if(_otherView) [self _returnPlayerToOtherIfNeeded];
     _shareTagElement = newTag;
     [self tryRegisterRouteIfNeeded];
   }
@@ -199,7 +209,7 @@ using namespace facebook::react;
   NSString *source = p.source.empty() ? @"" : [NSString stringWithUTF8String:p.source.c_str()];
   RCTVideoView *otherView = [RCTVideoRouteRegistry resolveViewForTag:_shareTagElement exclude:self];
   if(!otherView) [_videoManager applySource:source];
-  [_videoManager applyPaused:p.paused];
+  [self applyPaused:p.paused];
   [_videoManager applyMuted:p.muted];
   [_videoManager applyVolume:p.volume];
   [_videoManager applySeek:p.seek];
@@ -217,19 +227,21 @@ using namespace facebook::react;
   [_videoPoster applyPosterResizeMode:posterResizeMode];
   
   [self applyFullscreen:p.fullscreen];
-  
   [super updateProps:props oldProps:oldProps];
+}
+
+- (void)applyPaused:(BOOL) paused {
+  [_videoManager applyPaused:paused];
+  if(!paused) _videoPoster.hidden = YES;
 }
 
 - (void)applyPoster:(NSString *)poster {
   [_videoPoster applyPoster:poster];
-  [self showPosterNeeded];
 }
 
 - (void)showPosterNeeded {
   BOOL neverPlayed = (CMTimeGetSeconds(_videoManager.player.currentTime) <= 0.05);
   BOOL shouldShow = (_videoManager.paused && neverPlayed) || !_videoManager.player;
-  
   _videoPoster.hidden = !shouldShow;
 }
 
@@ -242,7 +254,6 @@ using namespace facebook::react;
     [_videoPlayerPosterContainer bringSubviewToFront:_videoPoster];
     [_videoPlayerPosterContainer setNeedsLayout];
     [_videoPlayerPosterContainer layoutIfNeeded];
-    [self showPosterNeeded];
   }
 }
 
@@ -312,6 +323,7 @@ using namespace facebook::react;
 #pragma mark - Navigation events
 
 - (void)rn_onEarlyPopFromNav {
+  _isWillPop = YES;
   if(_isSharing || _backGestureActive) return;
   [self backShareElement];
 }
@@ -320,12 +332,14 @@ using namespace facebook::react;
 }
 
 - (void)handleWillPop {
+  _isWillPop = YES;
   if(_isSharing || _backGestureActive) return;
   [self backShareElement];
 }
 
 - (void)handleDidPop {
   [[RNEarlyRegistry shared] removeView:self];
+  if(!_isPrepareForRecycle) return;
   [self willUnmount];
   [self unmount];
 }
@@ -402,13 +416,12 @@ using namespace facebook::react;
     [_otherView createPlayerLayerIfNeeded];
     [_otherView setNeedsLayout];
     [_otherView layoutIfNeeded];
-    
+    [_otherView showPosterNeeded];
     Float64 cur = CMTimeGetSeconds(_otherView.videoManager.player.currentTime);
     if (cur > 0.05) {
       _otherView.videoPoster.hidden = YES;
     }
-    [self willUnmount];
-    [self unmount];
+    [_otherView showPosterNeeded];
   }
 }
 
@@ -420,16 +433,23 @@ using namespace facebook::react;
   if(_otherView) {
     __weak __typeof__(self) wSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
-      [wSelf sharedTransitionFrom:wSelf.otherView to:wSelf isBack:NO];
+      if( wSelf.otherView.window == wSelf.window) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+          [wSelf sharedTransitionFrom:wSelf.otherView to:wSelf isBack:NO];
+        });
+      } else [wSelf sharedTransitionFrom:wSelf.otherView to:wSelf isBack:NO];
     });
-  } else self.hidden = NO;
+  } else {
+    [self showPosterNeeded];
+    self.hidden = NO;
+  }
 }
 
 - (void)backShareElement {
+  if(_otherView.window == self.window) return;
   if (!_otherView || _otherView.isPrepareForRecycle || _otherView.otherView) {
     [self _returnPlayerToOtherIfNeeded];
-    [self unmount];
-  } [self sharedTransitionFrom:self to:_otherView isBack:YES];
+  } else [self sharedTransitionFrom:self to:_otherView isBack:YES];
 }
 
 - (void)sharedTransitionFrom:(RCTVideoView *)fromView
@@ -450,14 +470,16 @@ using namespace facebook::react;
   fromView.isSharing = YES;
   toView.isSharing = YES;
   
-  CGRect fromFrame = [RCTVideoHelper frameInScreenStable:fromView];
-  CGRect toFrame   = [RCTVideoHelper frameInScreenStable:toView];
+  CGRect fromFrame = [RCTViewHelper frameInScreenStable:fromView];
+  CGRect toFrame   = [RCTViewHelper frameInScreenStable:toView];
   
   if(!fromView.window) fromFrame.origin.y += headerHeightFrom;
   if(!toView.window) toFrame.origin.y += headerHeightTo;
   
-  Float64 dur = [vc rn_transitionDuration];
-  if(dur > 0) [toView.videoOverlay applySharingAnimatedDuration:dur * 1000.0];
+  if(_otherView.window != self.window) {
+    Float64 dur = [vc rn_transitionDuration];
+    if(dur > 0) [toView.videoOverlay applySharingAnimatedDuration:dur * 1000.0];
+  }
   
   [toView.videoOverlay moveToOverlay:fromFrame
                           tagetFrame:toFrame

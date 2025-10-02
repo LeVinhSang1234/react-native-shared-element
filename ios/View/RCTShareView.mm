@@ -6,8 +6,10 @@
 //
 
 #import "RCTShareView.h"
+#import "RCTViewHelper.h"
 #import "RCTShareViewContainer.h"
 #import "UIView+NavTitleCache.h"
+#import "RCTShareViewOverlay.h"
 
 #import <react/renderer/components/shareelement/Props.h>
 #import <react/renderer/components/shareelement/ComponentDescriptors.h>
@@ -19,7 +21,6 @@
 #import "RNEarlyRegistry.h"
 #import "RCTShareViewRouteRegistry.h"
 #import "RCTVideoOverlay.h"
-
 
 using namespace facebook::react;
 
@@ -43,7 +44,7 @@ using namespace facebook::react;
 @property (nonatomic, assign) BOOL hasGestureTarget;
 @property (nonatomic, copy) NSString *shareTagElement;
 @property (nonatomic, strong, nullable) RCTShareView *otherView;
-
+@property (nonatomic, strong, nullable) RCTShareViewOverlay *shareViewOverlay;
 
 @end
 
@@ -63,6 +64,8 @@ using namespace facebook::react;
 
 - (instancetype)init {
   if(self = [super init]) {
+    _shareViewOverlay = [[RCTShareViewOverlay alloc] init];
+    
     _videoContainer = [[RCTShareViewContainer alloc] init];
     [self addSubview:_videoContainer];
   }
@@ -90,7 +93,7 @@ using namespace facebook::react;
 }
 
 - (void)unmount {
-  
+  [self unsubscribeNavLifecycle];
   _nav = nil;
   _otherView = nil;
   _isFocused = NO;
@@ -109,10 +112,6 @@ using namespace facebook::react;
     [self rn_updateCachedNavTitle];
   } else if (!_isFocused) {
     [[RNEarlyRegistry shared] removeView:self];
-    __weak __typeof__(self) wSelf = self;
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [wSelf unsubscribeNavLifecycle];
-    });
   }
 }
 
@@ -121,14 +120,14 @@ using namespace facebook::react;
   if(!_shareTagElement) {
     self.hidden = NO;
   } else {
-    // [self shareElement];
+    
   }
 }
 
 #pragma mark - React props / events
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps {
-  const auto &p = *std::static_pointer_cast<VideoProps const>(props);
+  const auto &p = *std::static_pointer_cast<ShareViewProps const>(props);
   
   NSString *newTag = p.shareTagElement.empty() ? nil : [NSString stringWithUTF8String:p.shareTagElement.c_str()];
   if (![newTag isEqualToString:_shareTagElement]) {
@@ -271,13 +270,13 @@ using namespace facebook::react;
       
       if (tc) {
         [tc notifyWhenInteractionChangesUsingBlock:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
-          BOOL popped = !ctx.isCancelled;
+          // BOOL popped = !ctx.isCancelled;
           // if (popped) [self _returnPlayerToOtherIfNeeded];
         }];
         
         [tc animateAlongsideTransition:nil completion:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
           if (!ctx.isInteractive) {
-            BOOL popped = !ctx.isCancelled;
+            // BOOL popped = !ctx.isCancelled;
             // if (popped) [self _returnPlayerToOtherIfNeeded];
           }
         }];
@@ -289,4 +288,54 @@ using namespace facebook::react;
   }
 }
 
+#pragma mark - ShareElement
+
+- (void)shareElement {
+  if(_otherView) {
+    __weak __typeof__(self) wSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [wSelf sharedTransitionFrom:wSelf.otherView to:wSelf isBack:NO];
+    });
+  } else self.hidden = NO;
+}
+
+
+- (void)sharedTransitionFrom:(RCTShareView *)fromView
+                          to:(RCTShareView *)toView
+                      isBack:(Boolean) isBack {
+  if (!fromView || !toView || fromView == toView) return;
+  
+  UIViewController *vcFrom = [fromView nearestViewController];
+  CGFloat headerHeightFrom = CGRectGetMaxY(vcFrom.navigationController.navigationBar.frame);
+  
+  UIViewController *vc = [toView nearestViewController];
+  CGFloat headerHeightTo = CGRectGetMaxY(vc.navigationController.navigationBar.frame);
+  
+  if(headerHeightTo < 0) headerHeightTo = 0;
+  if(headerHeightFrom < 0) headerHeightFrom = 0;
+  
+  fromView.isSharing = YES;
+  toView.isSharing = YES;
+  
+  CGRect fromFrame = [RCTViewHelper frameInScreenStable:fromView];
+  CGRect toFrame   = [RCTViewHelper frameInScreenStable:toView];
+  
+  if(!fromView.window) fromFrame.origin.y += headerHeightFrom;
+  if(!toView.window) toFrame.origin.y += headerHeightTo;
+  
+  Float64 dur = [vc rn_transitionDuration];
+  if(dur > 0) [toView.shareViewOverlay applySharingAnimatedDuration:dur * 1000.0];
+  
+  [toView.shareViewOverlay moveToOverlay:fromFrame
+                              tagetFrame:toFrame
+                                willMove:^ {
+    fromView.hidden = YES;
+    toView.hidden = YES;
+  }
+                                onTarget:^{
+    toView.hidden = NO;
+  } onCompleted:^{
+    if(isBack) [toView unmount];
+  }];
+}
 @end

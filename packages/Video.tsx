@@ -37,7 +37,7 @@ export interface VideoProps
     | 'posterResizeMode'
     | 'cacheMaxSize'
     | 'fullscreenMode'
-    | 'backgroundColor'
+    | 'bgColor'
   > {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   posterResizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
@@ -108,7 +108,7 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
       progressInterval={progressInterval}
       volume={volume}
       cacheMaxSize={config.cacheMaxSize}
-      backgroundColor={bg as string}
+      bgColor={bg as string}
     />
   );
 });

@@ -11,6 +11,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 @interface RCTVideoManager : NSObject
+@property (nonatomic, copy) NSString *source;
 @property (nonatomic, strong) AVPlayer *player;
 @property (nonatomic, strong) AVPlayerLayer *playerLayer;
 @property (nonatomic, copy) AVLayerVideoGravity aVLayerVideoGravity;

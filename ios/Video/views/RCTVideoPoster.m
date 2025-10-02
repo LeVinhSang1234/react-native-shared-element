@@ -26,6 +26,7 @@ static NSString * const kResizeModeCenter  = @"center";
     self.contentMode = UIViewContentModeScaleAspectFill;
     self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.clipsToBounds = YES;
+    self.hidden = YES;
   }
   return self;
 }
