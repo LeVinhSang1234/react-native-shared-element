@@ -121,8 +121,7 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
                 view.setBgColor(Color.BLACK)
             }
         } else {
-            view.setVideoBackgroundColor(Color.BLACK)
-            view.setBackgroundColor(Color.BLACK)
+            view.setBgColor(Color.BLACK)
         }
     }
 

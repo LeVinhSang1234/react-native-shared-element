@@ -44,6 +44,5 @@ const styles = StyleSheet.create({
   root: {
     width: '80%',
     height: 300,
-    marginTop: 100,
   },
 });

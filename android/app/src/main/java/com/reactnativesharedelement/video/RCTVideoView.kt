@@ -39,6 +39,7 @@ class RCTVideoView : FrameLayout {
             }
     private var overlay: RCTVideoOverlay? = null
     private var otherView: RCTVideoView? = null
+    private var otherViewSameWindow: Boolean = false
 
     // ===== Player =====
     internal var player: ExoPlayer? = null
@@ -121,6 +122,7 @@ class RCTVideoView : FrameLayout {
         )
         addView(videoPoster, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         addView(videoContainer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        setBackgroundColor(Color.BLACK)
     }
 
     @OptIn(UnstableApi::class)
@@ -184,7 +186,10 @@ class RCTVideoView : FrameLayout {
     // ===== Public props =====
     fun setSource(url: String?) {
         val other = RCTVideoTag.getOtherViewForTag(this, shareTagElement)
-        if (isSharing || (other != null && !other.isDealloc)) return
+        if (isSharing || (other != null && !other.isDealloc)) {
+            currentSource = url
+            return
+        }
         exitFullscreen()
         if (!url.isNullOrBlank() && url != currentSource) {
             player =
@@ -203,6 +208,25 @@ class RCTVideoView : FrameLayout {
             unmount()
             showPosterNeeded()
         }
+    }
+
+    fun setSourceFromCommand(url: String) {
+        exitFullscreen()
+        if (playerView.parent != null) {
+            (playerView.parent as? ViewGroup)?.removeView(playerView)
+        }
+        player =
+            buildPlayer().also {
+                playerView.player = it
+                attachListeners(it)
+            }
+        videoPoster.addView(
+            playerView,
+            0,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+        )
+        loadSource(url)
+        showPosterNeeded()
     }
 
     fun setBgColor(color: Int) {
@@ -325,12 +349,28 @@ class RCTVideoView : FrameLayout {
         val newTag = tag?.trim()?.takeIf { it.isNotEmpty() }
         val oldTag = shareTagElement
         if (oldTag != null && oldTag != newTag) {
+            if(player !== null) returnOtherViewIfNeeded(player!!)
             RCTVideoTag.removeView(this, oldTag)
+            if (newTag.isNullOrBlank()) {
+                initializePlayerFromCurrentProps()
+            }
         }
         shareTagElement = newTag
         if (newTag != null) {
             RCTVideoTag.registerView(this, newTag)
         }
+
+    }
+
+    fun initializePlayerFromCurrentProps() {
+        if (!currentSource.isNullOrBlank()) {
+            setSourceFromCommand(currentSource!!)
+        }
+        updatePlayState()
+        setLoop(isLooping)
+        setMuted(isMuted)
+        setVolume(rememberedVolume.toDouble())
+        setResizeMode(resizeModeStr)
     }
 
     fun enterFullscreen() {
@@ -513,7 +553,9 @@ class RCTVideoView : FrameLayout {
     fun dealloc() {
         isDealloc = true
         RCTVideoTag.removeView(this, shareTagElement)
-        revertShareElement()
+        if(otherViewSameWindow && player !== null) returnOtherViewIfNeeded(player!!);
+        else revertShareElement()
+        otherViewSameWindow = false
     }
 
     fun unmount() {
@@ -544,6 +586,23 @@ class RCTVideoView : FrameLayout {
     // ===== Share Element (Android version swap iOS) =====
     fun initialize() {}
 
+    fun returnOtherViewIfNeeded(movingPlayer: ExoPlayer) {
+        val other = otherView
+        if(other == null) return
+        other.videoW = videoW
+        other.videoH = videoH
+        other.player = null
+        other.playerView.player = null
+        other.player = movingPlayer
+        other.playerView.player = movingPlayer
+
+        other.applyAspectNow()
+        other.applyLoop(movingPlayer)
+        other.applyMuted(movingPlayer)
+        other.alpha = 1f
+        otherView = null
+    }
+
     // ===== Share Element (Android version swap iOS) =====
     private fun shareElement() {
         val other = RCTVideoTag.getOtherViewForTag(this, shareTagElement)
@@ -551,6 +610,7 @@ class RCTVideoView : FrameLayout {
             alpha = 1f
             return
         }
+        otherViewSameWindow = other.parent === parent
         otherView = other
         post {
             postDelayed(
@@ -587,16 +647,8 @@ class RCTVideoView : FrameLayout {
     }
 
     fun revertShareElement() {
-        val other =
-                otherView
-                        ?: run {
-                            cleanup()
-                            return
-                        }
-        if (other.isDealloc) {
-            cleanup()
-            return
-        }
+        val other = otherView ?: run { cleanup(); return }
+        if (other.isDealloc) { cleanup(); return }
         other.isSharing = true
         isSharing = true
         other.post {
@@ -616,19 +668,7 @@ class RCTVideoView : FrameLayout {
                     targetFrame = toRect,
                     player = movingPlayer,
                     bgColor = bgColor,
-                    onTarget = {
-                        other.videoW = videoW
-                        other.videoH = videoH
-                        other.player = null
-                        other.playerView.player = null
-                        other.player = movingPlayer
-                        other.playerView.player = movingPlayer
-
-                        other.applyAspectNow()
-                        other.applyLoop(movingPlayer)
-                        other.applyMuted(movingPlayer)
-                        other.alpha = 1f
-                    },
+                    onTarget = { returnOtherViewIfNeeded(movingPlayer) },
                     onCompleted = {
                         other.isSharing = false
                         other.overlay = null
