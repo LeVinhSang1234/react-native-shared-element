@@ -29,8 +29,6 @@ using namespace facebook::react;
 
 @interface RCTVideoView ()
 @property (nonatomic, assign) BOOL isFullscreen;
-@property (nonatomic, assign) BOOL isPrepareForRecycle;
-@property (nonatomic, assign) BOOL isWillPop;
 
 @property (nonatomic, strong) RCTVideoPoster *videoPoster;
 @property (nonatomic, strong) RCTVideoManager *videoManager;
@@ -115,15 +113,12 @@ using namespace facebook::react;
 }
 
 - (void)prepareForRecycle {
-  _isPrepareForRecycle = YES;
   [super prepareForRecycle];
-  if(!_isSharing) [self _returnPlayerToOtherIfNeeded];
   [self willUnmount];
-  dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
-                               (int64_t)(0.1 * NSEC_PER_SEC)),
-                 dispatch_get_main_queue(), ^{
-    if(!self.isWillPop) [self unmount];
-  });
+  if(!_isSharing) {
+    [self _returnPlayerToOtherIfNeeded];
+    [self unmount];
+  }
 }
 
 - (void)willUnmount {
@@ -142,7 +137,6 @@ using namespace facebook::react;
   _otherView = nil;
   _isFocused = NO;
   _isSharing = NO;
-  _isWillPop = NO;
 }
 
 #pragma mark - Window Lifecycle
@@ -165,7 +159,6 @@ using namespace facebook::react;
 }
 
 - (void)initialize {
-  _isPrepareForRecycle = NO;
   [self createPlayerLayerIfNeeded];
   if(!_shareTagElement) {
     self.hidden = NO;
@@ -198,17 +191,12 @@ using namespace facebook::react;
   [RCTVideoHelper applyMaxSizeCache:p.cacheMaxSize];
   
   NSString *newTag = p.shareTagElement.empty() ? nil : [NSString stringWithUTF8String:p.shareTagElement.c_str()];
-  if (![newTag isEqualToString:_shareTagElement]) {
-    [self unregisterRouteIfNeeded];
-    
-    if(_otherView) [self _returnPlayerToOtherIfNeeded];
-    _shareTagElement = newTag;
-    [self tryRegisterRouteIfNeeded];
-  }
+  if (![newTag isEqualToString:_shareTagElement]) [self applyShareElementTag:newTag];
   
   NSString *source = p.source.empty() ? @"" : [NSString stringWithUTF8String:p.source.c_str()];
   RCTVideoView *otherView = [RCTVideoRouteRegistry resolveViewForTag:_shareTagElement exclude:self];
   if(!otherView) [_videoManager applySource:source];
+  else _videoManager.source = source;
   [self applyPaused:p.paused];
   [_videoManager applyMuted:p.muted];
   [_videoManager applyVolume:p.volume];
@@ -228,6 +216,18 @@ using namespace facebook::react;
   
   [self applyFullscreen:p.fullscreen];
   [super updateProps:props oldProps:oldProps];
+}
+
+- (void)applyShareElementTag:(NSString *)newTag {
+  [self unregisterRouteIfNeeded];
+  
+  if(_otherView) {
+    [self _returnPlayerToOtherIfNeeded];
+    [_videoManager applySourceFromCommand:_videoManager.source];
+    [self createPlayerLayerIfNeeded];
+  }
+  _shareTagElement = newTag;
+  [self tryRegisterRouteIfNeeded];
 }
 
 - (void)applyPaused:(BOOL) paused {
@@ -282,14 +282,19 @@ using namespace facebook::react;
   __weak __typeof__(self) wSelf = self;
   self.nav = vc.navigationController;
   
-  [vc.rn_onWillPopBlocks addObject:^{ [wSelf handleWillPop]; }];
-  [vc.rn_onDidPopBlocks addObject:^{ [wSelf handleDidPop]; }];
+  _willPopBlock = ^{ [wSelf handleWillPop]; };
+  _didPopBlock = ^{ [wSelf handleDidPop]; };
+  _willAppearBlock = ^(BOOL animated){ [wSelf handleWillAppear:animated]; };
+  _didAppearBlock = ^(BOOL animated){ [wSelf handleDidAppear:animated]; };
+  _willDisappearBlock = ^(BOOL animated){ [wSelf handleWillDisappear:animated]; };
+  _didDisappearBlock = ^(BOOL animated){ [wSelf handleDidDisappear:animated]; };
   
-  [vc.rn_onWillAppearBlocks addObject:^(BOOL animated){ [wSelf handleWillAppear:animated]; }];
-  [vc.rn_onDidAppearBlocks addObject:^(BOOL animated){ [wSelf handleDidAppear:animated]; }];
-  
-  [vc.rn_onWillDisappearBlocks addObject:^(BOOL animated){ [wSelf handleWillDisappear:animated]; }];
-  [vc.rn_onDidDisappearBlocks addObject:^(BOOL animated){ [wSelf handleDidDisappear:animated]; }];
+  [vc.rn_onWillPopBlocks addObject:_willPopBlock];
+  [vc.rn_onDidPopBlocks addObject:_didPopBlock];
+  [vc.rn_onWillAppearBlocks addObject:_willAppearBlock];
+  [vc.rn_onDidAppearBlocks addObject:_didAppearBlock];
+  [vc.rn_onWillDisappearBlocks addObject:_willDisappearBlock];
+  [vc.rn_onDidDisappearBlocks addObject:_didDisappearBlock];
   
   [[NSNotificationCenter defaultCenter] addObserver:self
                                            selector:@selector(_onWillPopNoti:)
@@ -323,8 +328,7 @@ using namespace facebook::react;
 #pragma mark - Navigation events
 
 - (void)rn_onEarlyPopFromNav {
-  _isWillPop = YES;
-  if(_isSharing || _backGestureActive) return;
+  if(_isSharing || _backGestureActive || _otherView.window == self.window) return;
   [self backShareElement];
 }
 
@@ -332,26 +336,28 @@ using namespace facebook::react;
 }
 
 - (void)handleWillPop {
-  _isWillPop = YES;
-  if(_isSharing || _backGestureActive) return;
+  if(_isSharing || _backGestureActive || _otherView.window == self.window) return;
   [self backShareElement];
 }
 
 - (void)handleDidPop {
   [[RNEarlyRegistry shared] removeView:self];
-  if(!_isPrepareForRecycle) return;
   [self willUnmount];
-  [self unmount];
+  if(!_isSharing) {
+    [self _returnPlayerToOtherIfNeeded];
+    [self unmount];
+  }
 }
 
-- (void)handleWillAppear:(BOOL)animated {}
+- (void)handleWillAppear:(BOOL)animated {
+  _isFocused = YES;
+}
 
 - (void)handleWillDisappear:(BOOL)animated {}
 
 - (void)handleDidAppear:(BOOL)animated {
-  if (_isFocused) return;
-  _isFocused = YES;
-  
+  [_videoManager applyPausedFromCommand:_videoManager.paused];
+  [self showPosterNeeded];
   UIGestureRecognizer *g = self.nav.interactivePopGestureRecognizer;
   if (g && !self.hasGestureTarget) {
     [g addTarget:self action:@selector(_handlePopGesture:)];
@@ -370,7 +376,6 @@ using namespace facebook::react;
 
 - (void)_handlePopGesture:(UIGestureRecognizer *)gr {
   if (!_isFocused) return;
-  
   switch (gr.state) {
     case UIGestureRecognizerStateBegan: {
       _backGestureActive = YES;
@@ -425,12 +430,27 @@ using namespace facebook::react;
   }
 }
 
+- (void)removeOtherViewIfNeeded {
+  if (_otherView.otherView) {
+    [_otherView.otherView.videoManager applySourceFromCommand:_otherView.otherView.videoManager.source];
+    [_otherView.otherView createPlayerLayerIfNeeded];
+   
+    __weak __typeof__(self) wSelf = self;
+    _otherView.otherView.videoManager.onPlayerReady = ^{
+      [wSelf.otherView.otherView.videoManager applyPausedFromCommand: YES];
+      double seconds = CMTimeGetSeconds(wSelf.otherView.videoManager.player.currentTime);
+      [wSelf.otherView.otherView.videoManager seekToTime:seconds];
+      [wSelf.otherView.otherView showPosterNeeded];
+      wSelf.otherView.otherView = nil;
+    };
+  }
+}
 
 #pragma mark - Share Element
 - (void)shareElement {
-  if(_otherView) return;
   _otherView = [RCTVideoRouteRegistry resolveViewForTag:_shareTagElement exclude:self];
   if(_otherView) {
+    [self removeOtherViewIfNeeded];
     __weak __typeof__(self) wSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
       if( wSelf.otherView.window == wSelf.window) {
@@ -446,8 +466,7 @@ using namespace facebook::react;
 }
 
 - (void)backShareElement {
-  if(_otherView.window == self.window) return;
-  if (!_otherView || _otherView.isPrepareForRecycle || _otherView.otherView) {
+  if (!_otherView || _otherView.otherView) {
     [self _returnPlayerToOtherIfNeeded];
   } else [self sharedTransitionFrom:self to:_otherView isBack:YES];
 }

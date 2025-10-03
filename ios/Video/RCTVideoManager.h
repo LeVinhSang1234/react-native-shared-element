@@ -19,6 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) void (^onPlayerReady)(void);
 
 - (void)applySource:(NSString *)source;
+- (void)applySourceFromCommand:(NSString *)source;
 - (void)applyResizeMode:(NSString *)resizeMode;
 - (void)applyPaused:(BOOL)paused;
 - (void)applyPausedFromCommand:(BOOL)paused;

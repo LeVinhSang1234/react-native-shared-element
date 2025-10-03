@@ -84,16 +84,16 @@ static inline void rn_setFlag(id self, void *key, BOOL v) {
 #pragma mark - Swizzled methods
 
 - (void)rn_viewWillAppear_back:(BOOL)animated {
-  [self rn_viewWillAppear_back:animated]; // original
-
+  [self rn_viewWillAppear_back:animated];
   rn_setFlag(self, kWillPopFiredKey, NO);
   rn_setFlag(self, kDidPopFiredKey,  NO);
-
-  for (RNLifecycleBlock block in self.rn_onWillAppearBlocks) if (block) block(animated);
 
   id<UIViewControllerTransitionCoordinator> tc = self.transitionCoordinator;
   NSTimeInterval dur = tc ? tc.transitionDuration : 0.35;
   objc_setAssociatedObject(self, kNavTransitionDurationKey, @(dur), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  dispatch_async(dispatch_get_main_queue(), ^{
+    for (RNLifecycleBlock block in self.rn_onWillAppearBlocks) if (block) block(animated);
+  });
 }
 
 - (void)rn_viewDidAppear_back:(BOOL)animated {
@@ -104,30 +104,19 @@ static inline void rn_setFlag(id self, void *key, BOOL v) {
 - (void)rn_viewWillDisappear_back:(BOOL)animated {
   [self rn_viewWillDisappear_back:animated];
   for (RNLifecycleBlock block in self.rn_onWillDisappearBlocks) if (block) block(animated);
-
   BOOL isPopping = (self.isMovingFromParentViewController || self.isBeingDismissed);
   if (isPopping && !rn_getFlag(self, kWillPopFiredKey)) {
     rn_setFlag(self, kWillPopFiredKey, YES);
     for (RNBackBlock block in self.rn_onWillPopBlocks) if (block) block();
-  }
-  id<UIViewControllerTransitionCoordinator> tc = self.transitionCoordinator;
-  if (tc) {
-    [tc animateAlongsideTransition:nil completion:^(id<UIViewControllerTransitionCoordinatorContext> ctx) {
-      if (!ctx.isCancelled) {
-        for (RNBackBlock block in self.rn_onDidPopBlocks) if (block) block();
-      }
-    }];
   }
 }
 
 - (void)rn_viewDidDisappear_back:(BOOL)animated {
   [self rn_viewDidDisappear_back:animated];
   for (RNLifecycleBlock block in self.rn_onDidDisappearBlocks) if (block) block(animated);
-
-  BOOL popped = (self.navigationController &&
-                ![self.navigationController.viewControllers containsObject:self]) ||
-                self.isBeingDismissed;
-  if (popped && !rn_getFlag(self, kDidPopFiredKey)) {
+  BOOL isPopping = (self.isMovingFromParentViewController || self.isBeingDismissed);
+  
+  if (isPopping && !rn_getFlag(self, kDidPopFiredKey)) {
     rn_setFlag(self, kDidPopFiredKey, YES);
     for (RNBackBlock block in self.rn_onDidPopBlocks) if (block) block();
   }

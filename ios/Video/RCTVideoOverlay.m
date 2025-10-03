@@ -22,7 +22,6 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
 
 - (instancetype)init {
   if (self = [super init]) {
-    self.hidden = YES;
     _sharingAnimatedDuration = kDefaultSharingDuration;
     _videoGravity = AVLayerVideoGravityResizeAspect;
   }
@@ -93,8 +92,6 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
   
   [self startTicking];
   if(willMove) willMove();
-  self.hidden = NO;
-  
   __weak __typeof__(self) weakSelf = self;
   [UIView animateWithDuration:_sharingAnimatedDuration
                         delay:0
@@ -129,7 +126,6 @@ static const double kDefaultCompletionDelay   = 0.15;    // seconds
   }
   [self removeFromSuperview];
   [self stopTicking];
-  self.hidden = YES;
 }
 
 @end

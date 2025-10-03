@@ -46,6 +46,7 @@ static NSString * const kResizeModeCenter  = @"center";
   if (self = [super init]) {
     _aVLayerVideoGravity = AVLayerVideoGravityResizeAspect;
     _volume = 1.0;
+    _paused = YES;
   }
   return self;
 }
@@ -55,6 +56,18 @@ static NSString * const kResizeModeCenter  = @"center";
 - (void)applySource:(NSString *)source {
   if ([source isEqualToString:_source]) return;
   
+  [self willUnmount];
+  NSURL *videoURL = [RCTVideoHelper createVideoURL:source];
+  _player = [AVPlayer playerWithURL:videoURL];
+  
+  [self trackEventsPlayer];
+  [self createPlayerLayer];
+  
+  if (!_paused) [_player play];
+  _source = source;
+}
+
+- (void)applySourceFromCommand:(NSString *)source {
   [self willUnmount];
   NSURL *videoURL = [RCTVideoHelper createVideoURL:source];
   _player = [AVPlayer playerWithURL:videoURL];
@@ -119,7 +132,6 @@ static NSString * const kResizeModeCenter  = @"center";
 
 - (void)seekToTime:(double)seek {
   if (!_player || !_player.currentItem || _player.currentItem.status != AVPlayerItemStatusReadyToPlay) return;
-  
   CMTime seekTime = CMTimeMakeWithSeconds(seek, NSEC_PER_SEC);
   CMTime duration = _player.currentItem.duration;
   if (CMTIME_IS_VALID(duration) && CMTimeCompare(seekTime, duration) > 0) {

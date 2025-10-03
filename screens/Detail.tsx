@@ -1,14 +1,15 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Video from '../packages/Video';
-import { useNavigation } from '@react-navigation/native';
 import { useState } from 'react';
 
 export default function Detail() {
   const [copy, setCopy] = useState(false);
+  const [removeTag, setRemoveTag] = useState(false);
+
   return (
     <View>
       <Video
-        shareTagElement="Hello"
+        shareTagElement={'Hello'}
         style={styles.root}
         poster={{ uri: 'https://picsum.photos/300/200' }}
         source={{
@@ -18,7 +19,7 @@ export default function Detail() {
       />
       {copy ? (
         <Video
-          shareTagElement="Hello"
+          shareTagElement={removeTag ? undefined : 'Hello'}
           style={styles.root}
           poster={{ uri: 'https://picsum.photos/300/200' }}
           source={{
@@ -27,8 +28,13 @@ export default function Detail() {
           sharingAnimatedDuration={500}
         />
       ) : null}
+
       <TouchableOpacity onPress={() => setCopy(!copy)}>
-        <Text>Goback</Text>
+        <Text>Toggle Copy Video</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => setRemoveTag(!removeTag)}>
+        <Text>{removeTag ? 'Add ShareTag' : 'Remove ShareTag'}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -38,7 +44,6 @@ const styles = StyleSheet.create({
   root: {
     width: '80%',
     height: 300,
-    backgroundColor: 'red',
     marginTop: 100,
   },
 });
