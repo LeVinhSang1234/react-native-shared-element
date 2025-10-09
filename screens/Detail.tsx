@@ -16,8 +16,9 @@ export default function Detail() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         sharingAnimatedDuration={300}
+        paused={copy}
       />
-      {copy ? (
+      {/* {copy ? (
         <Video
           shareTagElement={removeTag ? undefined : 'Hello'}
           style={styles.root}
@@ -27,7 +28,7 @@ export default function Detail() {
           }}
           sharingAnimatedDuration={500}
         />
-      ) : null}
+      ) : null} */}
 
       <TouchableOpacity onPress={() => setCopy(!copy)}>
         <Text>Toggle Copy Video</Text>
