@@ -26,6 +26,18 @@ class RCTVideoTickers(
     private var lastOnLoadLoaded: Double? = null
     private var lastOnLoadDuration: Double? = null
 
+    private fun logMemory(tag: String = "VideoPlayer") {
+        val runtime = Runtime.getRuntime()
+        val usedHeap = runtime.totalMemory() - runtime.freeMemory()
+        val usedNative = android.os.Debug.getNativeHeapAllocatedSize()
+        val totalUsed = usedHeap + usedNative
+
+        android.util.Log.d(
+            "RCTVideoView",
+            "💾 [$tag] heap=${usedHeap / 1048576}MB, native=${usedNative / 1048576}MB, total=${totalUsed / 1048576}MB"
+        )
+    }
+
     // ====== progress ticker ======
     private val progressTick =
             object : Runnable {
@@ -47,7 +59,7 @@ class RCTVideoTickers(
                     val dur = if (p.duration > 0) p.duration / 1000.0 else null
                     val buf = (p.bufferedPosition.coerceAtLeast(0L)) / 1000.0
                     val playable = dur?.let { minOf(buf, it) } ?: buf
-
+                    // logMemory()
                     dispatcher.dispatchEvent(OnProgressEvent(viewId, pos, dur, playable))
                     reSchedule()
                 }

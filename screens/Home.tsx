@@ -20,9 +20,12 @@ export default function Home() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         sharingAnimatedDuration={300}
+        onError={e => console.log(e.nativeEvent)}
+        paused
+        posterResizeMode="contain"
       />
       <Pressable onPress={() => navigation.navigate('Detail' as never)}>
-        <Text style={{ color: 'white' }}>Goto Detail</Text>
+        <Text>Goto Detail</Text>
       </Pressable>
     </View>
   );

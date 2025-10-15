@@ -36,6 +36,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)seekToTime:(double)seek;
 - (void)enterFullscreen;
 - (void)exitFullscreen;
+- (void)applyBufferConfig:(double)maxBuffer;
+- (void)applyMaxRate:(double) maxBitRate;
+- (void)applyRate:(double) rate;
+- (void)applyPreventsDisplaySleepDuringVideoPlayback:(BOOL)keepAwake;
 
 // Share element: chuyển NGUYÊN player từ manager khác sang đây
 - (void)adoptPlayerFromManager:(RCTVideoManager *)other;

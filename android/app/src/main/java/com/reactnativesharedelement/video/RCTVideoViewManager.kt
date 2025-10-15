@@ -8,6 +8,8 @@ import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.reactnativesharedelement.video.helpers.HttpStack
+import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.ReadableType
 
 class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
 
@@ -133,6 +135,48 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
             HttpStack.reset()
             HttpStack.get(ctx, HttpStack.Options(cacheSizeBytes = sizeMB.toLong() * 1024 * 1024))
         }
+    }
+
+    @ReactProp(name = "bufferConfig")
+    fun setBufferConfig(view: RCTVideoView, config: ReadableMap?) {
+        if (config == null) {
+            view.setBufferConfig(null)
+            return
+        }
+        val map = mutableMapOf<String, Any>()
+        val iterator = config.keySetIterator()
+
+        while (iterator.hasNextKey()) {
+            val key = iterator.nextKey()
+            when (config.getType(key)) {
+                ReadableType.Number -> map[key] = config.getDouble(key)
+                ReadableType.String -> {
+                    config.getString(key)?.toDoubleOrNull()?.let { map[key] = it }
+                }
+                else -> {}
+            }
+        }
+        view.setBufferConfig(map)
+    }
+
+    @ReactProp(name = "maxBitRate")
+    fun setMaxBitRate(view: RCTVideoView, value: Double) {
+        view.setMaxBitRate(value.toInt())
+    }
+
+    @ReactProp(name = "rate", defaultDouble = 1.0)
+    fun setRate(view: RCTVideoView, rate: Double) {
+        view.setRate(rate)
+    }
+
+    @ReactProp(name = "preventsDisplaySleepDuringVideoPlayback", defaultBoolean = false)
+    fun setPreventsDisplaySleep(view: RCTVideoView, enabled: Boolean) {
+        view.setKeepScreenOnEnabled(enabled)
+    }
+
+    @ReactProp(name = "useOkHttp", defaultBoolean = true)
+    fun setUseOkHttp(view: RCTVideoView, useOkHttp: Boolean) {
+        view.setUseOkHttp(useOkHttp)
     }
 
     override fun receiveCommand(view: RCTVideoView, commandId: String, args: ReadableArray?) {

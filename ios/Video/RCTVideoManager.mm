@@ -27,6 +27,9 @@ static NSString * const kResizeModeCenter  = @"center";
 @property (nonatomic, assign) double seek;
 @property (nonatomic, assign) double volume;
 @property (nonatomic, assign) double progressInterval;
+@property (nonatomic, assign) double maxBitRate;
+@property (nonatomic, assign) double maxBuffer;
+@property (nonatomic, assign) BOOL keepAwake;
 
 // Event emitter
 @property (nonatomic, assign) const facebook::react::VideoEventEmitter *eventEmitter;
@@ -92,6 +95,7 @@ static NSString * const kResizeModeCenter  = @"center";
   if (paused == _paused) return;
   [self applyPausedFromCommand:paused];
   _paused = paused;
+  [self updateIdleTimer];
 }
 
 - (void)applyPausedFromCommand:(BOOL)paused {
@@ -175,6 +179,49 @@ static NSString * const kResizeModeCenter  = @"center";
   _enableOnLoad = enable;
 }
 
+- (void)applyRate:(double)rate {
+  if (!_player) return;
+  if (rate <= 0) {
+    _player.rate = 0.0;
+  } else {
+    _player.rate = rate;
+    _player.automaticallyWaitsToMinimizeStalling = NO;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+      self.player.automaticallyWaitsToMinimizeStalling = self.maxBuffer >= 3000;
+     });
+  }
+}
+
+- (void)applyBufferConfig:(double)maxBuffer {
+  if (!_player || maxBuffer == _maxBuffer) return;
+  _maxBuffer = maxBuffer;
+  if (maxBuffer > 0) {
+    _player.currentItem.preferredForwardBufferDuration = maxBuffer / 1000.0;
+  }
+  _player.automaticallyWaitsToMinimizeStalling = maxBuffer >= 3000;
+}
+
+- (void)applyMaxRate:(double)maxBitRate {
+  if (maxBitRate > 0 && maxBitRate != _maxBitRate) {
+    _maxBitRate = maxBitRate;
+    _player.currentItem.preferredPeakBitRate = maxBitRate;
+  }
+}
+
+- (void)applyPreventsDisplaySleepDuringVideoPlayback:(BOOL)keepAwake {
+  if(keepAwake == _keepAwake) return;
+  _keepAwake = keepAwake;
+  [self updateIdleTimer];
+}
+
+- (void)updateIdleTimer {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    UIApplication *app = [UIApplication sharedApplication];
+    BOOL shouldKeepAwake = self.keepAwake && !self.paused && self.player.timeControlStatus == AVPlayerTimeControlStatusPlaying;
+    app.idleTimerDisabled = shouldKeepAwake;
+  });
+}
+
 #pragma mark - Player layer
 
 - (void)createPlayerLayer {
@@ -248,7 +295,7 @@ static NSString * const kResizeModeCenter  = @"center";
   if (_loop) {
     [_player seekToTime:kCMTimeZero];
     [self applyPaused:_paused];
-  }
+  } else [self updateIdleTimer];
 }
 
 - (void)sendOnErrorEvent:(NSError *)error {
@@ -423,7 +470,7 @@ static NSString * const kResizeModeCenter  = @"center";
   CustomPlayerViewController *playerVC = [CustomPlayerViewController new];
   playerVC.player = _player;
   playerVC.modalPresentationStyle = UIModalPresentationFullScreen;
-
+  
   __weak __typeof__(self) weakSelf = self;
   playerVC.onDismiss = ^{
     dispatch_async(dispatch_get_main_queue(), ^ {

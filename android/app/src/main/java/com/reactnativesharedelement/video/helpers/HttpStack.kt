@@ -118,4 +118,19 @@ object HttpStack {
         val cap = cm.getNetworkCapabilities(net) ?: return false
         return cap.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
+
+    fun clear() {
+        synchronized(this) {
+            try {
+                client?.connectionPool?.evictAll()
+                client?.cache?.evictAll()
+                client?.dispatcher?.executorService?.shutdown()
+                client?.dispatcher?.cancelAll()
+                client = null
+                lastOpts = null
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }

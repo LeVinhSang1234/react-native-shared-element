@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { StyleSheet, type MeasureOnSuccessCallback } from 'react-native';
 import { preloadVideoSource } from './utils';
+import NativeVideoThumbnail from '../natives/NativeVideoThumbnail';
 
 type TNativeRef = React.ComponentRef<typeof VideoNativeComponent>;
 
@@ -48,7 +49,15 @@ export interface VideoProps
 const config = { cacheMaxSize: 300 };
 
 const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
-  const { source, poster, progressInterval = 250, volume = 1, ...p } = props;
+  const {
+    source,
+    poster,
+    progressInterval = 250,
+    volume = 1,
+    rate = 1,
+    useOkHttp = true,
+    ...p
+  } = props;
 
   const nativeRef = useRef<TNativeRef>(null);
 
@@ -100,7 +109,9 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
   return (
     <VideoNativeComponent
       {...p}
+      useOkHttp={useOkHttp}
       ref={nativeRef}
+      rate={rate}
       source={_source}
       poster={_poster}
       enableProgress={!!p.onProgress}
@@ -115,6 +126,11 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
 
 export function setCacheMaxSize(size: number = 300) {
   config.cacheMaxSize = size;
+}
+
+export async function getThumb(url: string, timeSec: number) {
+  const base64 = await NativeVideoThumbnail.getThumbnail(url, timeSec * 1000);
+  return base64;
 }
 
 Video.displayName = 'Video';

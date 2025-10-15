@@ -21,12 +21,6 @@ static void PrepareEarly() {
 }
 @implementation RCTNativeEarly
 
-- (id) init {
-  if (self = [super init]) {
-  }
-  return self;
-}
-
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:(const facebook::react::ObjCTurboModule::InitParams &)params {
   return std::make_shared<facebook::react::NativeEarlySpecJSI>(params);
 }

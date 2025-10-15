@@ -51,7 +51,6 @@ static NSTimeInterval const kPosterMaxAge   = 6 * 60 * 60; // 6h
     if (!url) return nil;
 
     [RCTVideoCache VC_StartProxy];
-    [RCTVideoCache trimCacheIfNeeded];
     [RCTVideoCache VC_PrefetchHead:url seconds:3.0 bitratebps:10e6];
 
     return [RCTVideoCache proxyURLWithOriginalURL:url];

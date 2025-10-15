@@ -208,6 +208,11 @@ using namespace facebook::react;
   [_videoManager applyLoop:p.loop];
   [_videoOverlay applySharingAnimatedDuration:p.sharingAnimatedDuration];
   
+  [self applyBufferConfig:p.bufferConfig];
+  [_videoManager applyMaxRate:p.maxBitRate];
+  [_videoManager applyRate:p.rate];
+  [_videoManager applyPreventsDisplaySleepDuringVideoPlayback:p.preventsDisplaySleepDuringVideoPlayback];
+  
   NSString *poster = p.poster.empty() ? nil : [NSString stringWithUTF8String:p.poster.c_str()];
   [self applyPoster:poster];
   
@@ -216,6 +221,12 @@ using namespace facebook::react;
   
   [self applyFullscreen:p.fullscreen];
   [super updateProps:props oldProps:oldProps];
+}
+
+- (void)applyBufferConfig:(const facebook::react::VideoBufferConfigStruct &)bufferConfig {
+  double maxBuffer = 0;
+  if (!std::isnan(bufferConfig.maxBufferMs)) maxBuffer = bufferConfig.maxBufferMs;
+  [_videoManager applyBufferConfig:maxBuffer];
 }
 
 - (void)applyShareElementTag:(NSString *)newTag {

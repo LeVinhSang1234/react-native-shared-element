@@ -35,6 +35,14 @@ export interface OnBufferingData {
 
 export interface OnEndData {}
 
+export interface BufferConfig {
+  readonly minBufferMs?: Double;
+  readonly maxBufferMs?: Double;
+  readonly bufferForPlaybackMs?: Double;
+  readonly bufferForPlaybackAfterRebufferMs?: Double;
+  readonly maxHeapAllocationPercent?: Double;
+}
+
 export interface VideoNativeProps extends ViewProps {
   readonly source: string;
   readonly poster?: string;
@@ -60,6 +68,24 @@ export interface VideoNativeProps extends ViewProps {
   readonly onFullscreenPlayerDidDismiss?: BubblingEventHandler<{}>;
   readonly cacheMaxSize?: Double;
   readonly fullscreen?: boolean;
+  readonly bufferConfig?: BufferConfig;
+  readonly maxBitRate?: Double;
+  readonly rate?: Double;
+  readonly preventsDisplaySleepDuringVideoPlayback?: boolean;
+
+  /**
+   * Android only.
+   *
+   * When `true` (default), uses OkHttp as the HTTP client for video streaming.
+   * This enables caching and custom headers for smoother playback.
+   *
+   * When `false`, falls back to ExoPlayer's built-in
+   * DefaultHttpDataSource which uses **less RAM** but disables caching.
+   *
+   * 👉 Keep this `true` for better performance on most devices.
+   * 👉 Set to `false` only when you want to minimize memory usage or run multiple videos at once.
+   */
+  readonly useOkHttp?: boolean;
 }
 
 interface NativeCommands {

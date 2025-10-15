@@ -105,6 +105,14 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+
+    packaging {
+        resources {
+            excludes += [
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+            ]
+        }
+    }
 }
 
 dependencies {
@@ -121,7 +129,8 @@ dependencies {
     implementation "androidx.media3:media3-ui:1.8.0"
     implementation "androidx.media3:media3-common:1.8.0"
     implementation "androidx.media3:media3-datasource-okhttp:1.8.0"
-    implementation "com.squareup.okhttp3:okhttp:5.1.0"
-    implementation "com.squareup.okhttp3:logging-interceptor:5.1.0"
-    implementation "com.squareup.okhttp3:okhttp-dnsoverhttps:5.1.0"
+    implementation "androidx.media3:media3-datasource:1.8.0"
+    implementation "com.squareup.okhttp3:okhttp:5.2.1"
+    implementation "com.squareup.okhttp3:logging-interceptor:5.2.1"
+    implementation "com.squareup.okhttp3:okhttp-dnsoverhttps:5.2.1"
 }
