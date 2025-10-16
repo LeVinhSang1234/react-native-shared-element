@@ -179,6 +179,11 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
         view.setUseOkHttp(useOkHttp)
     }
 
+    @ReactProp(name = "stopWhenPaused", defaultBoolean = true)
+    fun setStopWhenPaused(view: RCTVideoView, stopWhenPaused: Boolean) {
+        view.setStopWhenPaused(stopWhenPaused)
+    }
+
     override fun receiveCommand(view: RCTVideoView, commandId: String, args: ReadableArray?) {
         when (commandId) {
             "setSeekCommand" -> {

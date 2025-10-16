@@ -74,7 +74,7 @@ export interface VideoNativeProps extends ViewProps {
   readonly preventsDisplaySleepDuringVideoPlayback?: boolean;
 
   /**
-   * Android only.
+   * ⚠️ Android only.
    *
    * When `true` (default), uses OkHttp as the HTTP client for video streaming.
    * This enables caching and custom headers for smoother playback.
@@ -86,6 +86,20 @@ export interface VideoNativeProps extends ViewProps {
    * 👉 Set to `false` only when you want to minimize memory usage or run multiple videos at once.
    */
   readonly useOkHttp?: boolean;
+
+  /**
+   * ⚠️ Android only.
+   *
+   * When true, the player will fully stop playback instead of just pausing when `paused={true}`.
+   *
+   * This immediately releases video decoders and buffered data to reduce memory usage,
+   * but playback will need to re-prepare when resumed.
+   *
+   * Default: false (normal pause behavior — keeps buffer in memory)
+   *
+   * Android only.
+   */
+  readonly stopWhenPaused?: boolean;
 }
 
 interface NativeCommands {

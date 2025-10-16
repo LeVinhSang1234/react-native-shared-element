@@ -8,7 +8,7 @@ export default function Home() {
 
   return (
     <View style={styles.flex}>
-      <ShareView shareTagElement="ShareView" style={{ backgroundColor: 'red' }}>
+      <ShareView shareTagElement="ShareView">
         <Text>Hello</Text>
         <Text>How are you</Text>
       </ShareView>
@@ -21,8 +21,9 @@ export default function Home() {
         }}
         sharingAnimatedDuration={300}
         onError={e => console.log(e.nativeEvent)}
-        paused
         posterResizeMode="contain"
+        stopWhenPaused
+        progressInterval={2000}
       />
       <Pressable onPress={() => navigation.navigate('Detail' as never)}>
         <Text>Goto Detail</Text>

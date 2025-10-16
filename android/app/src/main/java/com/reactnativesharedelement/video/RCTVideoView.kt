@@ -29,7 +29,6 @@ import androidx.media3.exoplayer.upstream.DefaultAllocator
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.datasource.DefaultHttpDataSource
-import android.util.Log
 
 class RCTVideoView : FrameLayout {
 
@@ -57,6 +56,7 @@ class RCTVideoView : FrameLayout {
     // ===== State =====
     private var posterResizeMode: String = "cover"
     private var posterBitmap: Bitmap? = null
+    private var posterUrl: String? = null
     private var isDealloc = false
     private var isFullscreen = false
     private var externallyPaused = false
@@ -81,6 +81,7 @@ class RCTVideoView : FrameLayout {
     private var playbackRate = 1.0
     private var keepScreenOnEnabled = false
     private var useOkHttp = true
+    private var stopWhenPaused = false
 
     private val tickers by lazy {
         RCTVideoTickers(
@@ -155,18 +156,19 @@ class RCTVideoView : FrameLayout {
         val maxB = (bufferConfig?.get("max") ?: defaultMax.toDouble()).toInt()
         val playB = (bufferConfig?.get("play") ?: defaultPlay.toDouble()).toInt()
         val rebB = (bufferConfig?.get("rebuffer") ?: defaultRebuffer.toDouble()).toInt()
-        val heapPercent = (bufferConfig?.get("heapPercent") ?: 0.0).coerceIn(0.0, 1.0)
 
-        val allocator = if (heapPercent > 0) {
-            val heapLimit = (Runtime.getRuntime().maxMemory() * heapPercent).toInt()
-            DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE, heapLimit)
-        } else {
-            DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE)
-        }
+        val safePlayB = playB.coerceAtMost(minB)
+        val safeRebB = rebB.coerceAtMost(safePlayB)
+        val safeMinB = minB.coerceAtMost(maxB)
+        val heapPercent = (bufferConfig?.get("heapPercent") ?: 0.0).coerceIn(0.01, 1.0)
+        val maxHeap = Runtime.getRuntime().maxMemory()
+        val targetBufferBytes = (maxHeap * heapPercent).toInt()
+        val allocator = DefaultAllocator(true, C.DEFAULT_BUFFER_SEGMENT_SIZE)
 
         val loadControl = DefaultLoadControl.Builder()
             .setAllocator(allocator)
-            .setBufferDurationsMs(minB, maxB, playB, rebB)
+            .setBufferDurationsMs(safeMinB, maxB, safePlayB, safeRebB)
+            .setTargetBufferBytes(targetBufferBytes)
             .build()
 
         val trackSelector = DefaultTrackSelector(context).apply {
@@ -390,6 +392,10 @@ class RCTVideoView : FrameLayout {
         rebuildPlayerIfNeeded()
     }
 
+    fun setStopWhenPaused(value: Boolean) {
+        stopWhenPaused = value
+    }
+
     fun setRate(rate: Double) {
         playbackRate = rate.coerceIn(0.1, 2.0)
         player?.let {
@@ -401,12 +407,17 @@ class RCTVideoView : FrameLayout {
             }
         }
     }
-    
+
     fun setPoster(url: String?) {
+        if (posterUrl == url) return
+        applyPoster()
+    }
+
+    private fun applyPoster() {
         posterView.setImageDrawable(null)
         posterBitmap?.recycle()
         posterBitmap = null
-        if (url.isNullOrBlank()) {
+        if (posterUrl.isNullOrBlank()) {
             posterView.visibility = GONE
             return
         }
@@ -414,7 +425,7 @@ class RCTVideoView : FrameLayout {
         post {
             Thread {
                 try {
-                    val bmp = decodeScaledBitmap(url, width, height)
+                    val bmp = decodeScaledBitmap(posterUrl!!, width, height)
                     posterBitmap = bmp
                     post {
                         posterView.setImageBitmap(bmp)
@@ -422,7 +433,6 @@ class RCTVideoView : FrameLayout {
                 } catch (_: Exception) {
                 }
             }.start()
-            applyPosterResizeMode(posterResizeMode)
             showPosterNeeded()
         }
     }
@@ -540,6 +550,14 @@ class RCTVideoView : FrameLayout {
     }
 
     private fun updatePlayState() {
+        if (stopWhenPaused) {
+            try {
+                if (externallyPaused) player?.stop()
+                else player?.prepare()
+            } catch (e: Exception) {
+                dispatchErrorSafe(e.localizedMessage, "E_STOP_WHEN_PAUSED")
+            }
+        }
         player?.playWhenReady = !externallyPaused
     }
 
@@ -561,13 +579,7 @@ class RCTVideoView : FrameLayout {
     }
 
     private fun applyPosterResizeMode(mode: String) {
-        posterView.scaleType =
-            when (mode) {
-                "cover" -> ImageView.ScaleType.CENTER_CROP
-                "stretch", "fill" -> ImageView.ScaleType.FIT_XY
-                "center" -> ImageView.ScaleType.CENTER
-                else -> ImageView.ScaleType.FIT_CENTER
-            }
+        applyPoster()
     }
 
     fun dispatchErrorSafe(message: String?, code: String?) {
@@ -586,7 +598,6 @@ class RCTVideoView : FrameLayout {
                     )
                 )
         } catch (e: Exception) {
-            android.util.Log.e("RCTVideoView", "⚠️ dispatchErrorSafe failed", e)
         }
     }
 
@@ -764,16 +775,43 @@ class RCTVideoView : FrameLayout {
         tickers.stopProgress()
         tickers.stopOnLoad()
         currentSource = null
-        if (!isSharing) player?.release()
+
+        if (!isSharing && player != null) {
+            player?.apply {
+                if (playbackState != Player.STATE_IDLE && playbackState != Player.STATE_ENDED) {
+                    try {
+                        clearVideoSurface()
+                    } catch (e: Exception) {
+                        dispatchErrorSafe(e.localizedMessage, "E_CLEAR_VIDEO_SURFACE")
+                    }
+                }
+                try {
+                    stop()
+                } catch (e: Exception) {
+                    dispatchErrorSafe(e.localizedMessage, "E_STOP_PLAYER")
+                }
+                try {
+                    release()
+                } catch (e: Exception) {
+                    dispatchErrorSafe(e.localizedMessage, "E_RELEASE_PLAYER")
+                }
+            }
+        }
         playerView.player = null
         videoPoster.removeView(playerView)
+
         player = null
         videoW = 0
         videoH = 0
         lastIsBuffering = null
         didEmitLoadStartForCurrentItem = false
-        HttpStack.clear()
+
+        posterBitmap?.recycle()
+        posterBitmap = null
+
+        System.runFinalization()
         System.gc()
+        Runtime.getRuntime().gc()
     }
 
     fun cleanup() {
