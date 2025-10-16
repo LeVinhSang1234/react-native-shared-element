@@ -146,24 +146,40 @@ Example:
 
 ## Props
 
-| Prop                      | Type                                          | Default      | Description                                                                                                                                      |
-| ------------------------- | --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `source`                  | string / { uri: string } / number             | **Required** | Video source. Can be a URL string, local asset, or resource ID.                                                                                  |
-| `poster`                  | string / { uri: string } / number             |              | Poster image to display before the video loads.                                                                                                  |
-| `loop`                    | boolean                                       | `false`      | If true, the video will loop when it ends.                                                                                                       |
-| `muted`                   | boolean                                       | `false`      | If true, the video will be muted.                                                                                                                |
-| `paused`                  | boolean                                       | `false`      | If true, the video will be paused.                                                                                                               |
-| `seek`                    | number                                        |              | Seek to a specific time (in seconds).                                                                                                            |
-| `volume`                  | number                                        | `1`          | Video volume (0 to 1).                                                                                                                           |
-| `shareTagElement`         | string                                        |              | Tag for shared element transition.                                                                                                               |
-| `resizeMode`              | 'contain' \| 'cover' \| 'stretch' \| 'center' | `'contain'`  | Video resize mode.                                                                                                                               |
-| `posterResizeMode`        | 'contain' \| 'cover' \| 'stretch' \| 'center' |              | Poster resize mode.                                                                                                                              |
-| `progressInterval`        | number                                        | `250`        | Interval (ms) for progress updates via onProgress.                                                                                               |
-| `enableProgress`          | boolean                                       |              | Enable onProgress event (auto if onProgress is provided).                                                                                        |
-| `enableOnLoad`            | boolean                                       |              | Enable onLoad event (auto if onLoad is provided).                                                                                                |
-| `sharingAnimatedDuration` | number                                        | `350`        | Duration (ms) for shared element transition animation.<br>Note: Will try to get from React Navigation if available, otherwise defaults to 350ms. |
-| `fullscreen`              | boolean                                       | `false`      | Enable fullscreen mode for video.                                                                                                                |
-| `children`                | ReactNode                                     |              | Any React Native view(s) to overlay on top of the video.                                                                                         |
+| Prop                                      | Type                                          | Default      | Description                                                                                                                                      |
+| ----------------------------------------- | --------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `source`                                  | string / { uri: string } / number             | **Required** | Video source. Can be a URL string, local asset, or resource ID.                                                                                  |
+| `poster`                                  | string / { uri: string } / number             |              | Poster image to display before the video loads.                                                                                                  |
+| `loop`                                    | boolean                                       | `false`      | If true, the video will loop when it ends.                                                                                                       |
+| `muted`                                   | boolean                                       | `false`      | If true, the video will be muted.                                                                                                                |
+| `paused`                                  | boolean                                       | `false`      | If true, the video will be paused.                                                                                                               |
+| `seek`                                    | number                                        |              | Seek to a specific time (in seconds).                                                                                                            |
+| `volume`                                  | number                                        | `1`          | Video volume (0 to 1).                                                                                                                           |
+| `shareTagElement`                         | string                                        |              | Tag for shared element transition.                                                                                                               |
+| `resizeMode`                              | 'contain' \| 'cover' \| 'stretch' \| 'center' | `'contain'`  | Video resize mode.                                                                                                                               |
+| `posterResizeMode`                        | 'contain' \| 'cover' \| 'stretch' \| 'center' |              | Poster resize mode.                                                                                                                              |
+| `progressInterval`                        | number                                        | `250`        | Interval (ms) for progress updates via onProgress.                                                                                               |
+| `enableProgress`                          | boolean                                       |              | Enable onProgress event (auto if onProgress is provided).                                                                                        |
+| `enableOnLoad`                            | boolean                                       |              | Enable onLoad event (auto if onLoad is provided).                                                                                                |
+| `sharingAnimatedDuration`                 | number                                        | `350`        | Duration (ms) for shared element transition animation.<br>Note: Will try to get from React Navigation if available, otherwise defaults to 350ms. |
+| `fullscreen`                              | boolean                                       | `false`      | Enable fullscreen mode for video.                                                                                                                |
+| `bufferConfig`                            | object (BufferConfig)                         |              | Advanced buffer configuration for video playback (Android only). See [BufferConfig](#bufferconfig) below.                                        |
+| `maxBitRate`                              | number                                        |              | Maximum video bit rate.                                                                                                                          |
+| `rate`                                    | number                                        |              | Playback rate (speed).                                                                                                                           |
+| `preventsDisplaySleepDuringVideoPlayback` | boolean                                       |              | Prevent device display from sleeping during video playback.                                                                                      |
+| `children`                                | ReactNode                                     |              | Any React Native view(s) to overlay on top of the video.                                                                                         |
+
+### BufferConfig
+
+BufferConfig object fields (Android only):
+
+| Field                              | Type   | Description                                                             |
+| ---------------------------------- | ------ | ----------------------------------------------------------------------- |
+| `minBufferMs`                      | number | Minimum buffer duration (ms) before playback starts.                    |
+| `maxBufferMs`                      | number | Maximum buffer duration (ms) allowed during playback.                   |
+| `bufferForPlaybackMs`              | number | Amount of buffer (ms) required to start playback.                       |
+| `bufferForPlaybackAfterRebufferMs` | number | Amount of buffer (ms) required to resume playback after rebuffering.    |
+| `maxHeapAllocationPercent`         | number | Maximum percent of heap memory allowed for video buffer (Android only). |
 
 ## Event Props (Video only)
 
@@ -214,53 +230,6 @@ videoRef.current?.presentFullscreenPlayer();
 // Dismiss the fullscreen video player
 videoRef.current?.dismissFullscreenPlayer();
 ```
-
-# Shared View
-
-```tsx
-import { ShareView } from '@rn-slv/react-native-shared-element';
-
-<ShareView shareTagElement="myView">
-  <Text style={{ fontSize: 24, color: 'tomato' }}>Hello Shared View</Text>
-  <Image source={require('./test.png')} style={{ width: 200, height: 120 }} />
-  {/* Any children except <Video> */}
-</ShareView>;
-```
-
-> **Note:**
-> You can place a `<Video>` component inside a `ShareView`, but `ShareView` itself will not share the video as a shared element. If you want to share the video, use the `shareTagElement` prop directly on the `<Video>` component. For images, text, and other standard React Native views, you can use `ShareView` as usual.
-
-| Prop                      | Type      | Default | Description                                                                                                                                                                                                                                       |
-| ------------------------- | --------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shareTagElement`         | string    |         | Tag for shared element transitions between views.                                                                                                                                                                                                 |
-| `sharingAnimatedDuration` | number    | `350`   | Duration (ms) for shared element transition animation.<br>**Note:** The component will attempt to get `sharingAnimatedDuration` from React Navigation if available, but in some cases it may not be present. If not set, the default is `350` ms. |
-| `children`                | ReactNode |         | Any React Native view(s) to be shared.                                                                                                                                                                                                            |
-
----
-
-```tsx
-const shareViewRef = useRef<ShareViewRef>(null);
-
-<ShareView ref={shareViewRef} shareTagElement="myView">
-  {/* ... */}
-</ShareView>;
-
-// Prepare for recycling (advanced)
-await shareViewRef.current?.prepareForRecycle();
-```
-
-> **Note:**  
-> Shared element transitions can work between any two tags on the same screen, not just between screens or with react-navigation. You can trigger a shared transition between two `shareTagElement` values anywhere in your UI.
->
-> The `prepareForRecycle` method is designed specifically to address an Android limitation:  
-> When navigating back on Android, the content of the previous screen may be destroyed or lost before the shared element transition can occur.  
-> By calling `prepareForRecycle()` manually **before** triggering a back navigation in React Native, you ensure that the shared content is preserved and can be animated smoothly during the transition.
->
-> **Usage:**
->
-> - You are **not required** to call this method. If you don't call it, the shared element transition will not run and the screen will just go back as normal.
-> - If you want to ensure the shared element effect works on Android when going back, call `await shareViewRef.current?.prepareForRecycle();` right before navigating back (e.g. in your custom back handler or before calling `navigation.goBack()`).
-> - Not needed on iOS, but safe to call on both platforms.
 
 ---
 
