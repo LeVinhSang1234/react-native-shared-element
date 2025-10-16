@@ -128,7 +128,7 @@ export function setCacheMaxSize(size: number = 300) {
   config.cacheMaxSize = size;
 }
 
-export async function getThumb(url: string, timeSec: number) {
+export async function getThumbnailVideo(url: string, timeSec: number) {
   const base64 = await NativeVideoThumbnail.getThumbnail(url, timeSec * 1000);
   return base64;
 }
