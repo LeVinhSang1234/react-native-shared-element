@@ -15,15 +15,17 @@ export default function Home() {
       <Video
         shareTagElement="Hello"
         style={styles.root}
-        poster={{ uri: 'https://picsum.photos/300/200' }}
         source={{
-          uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          uri: 'https://res.cloudinary.com/dn2lgibpf/video/upload/v1760546576/uploads_besties/1760544963083UcOz2OtpWAf9.mp4',
         }}
         sharingAnimatedDuration={300}
         onError={e => console.log(e.nativeEvent)}
         posterResizeMode="contain"
         stopWhenPaused
         progressInterval={2000}
+        onBuffering={e => console.log(e.nativeEvent)}
+        onLoad={e => console.log(e.nativeEvent)}
+        onLoadStart={e => console.log(e.nativeEvent)}
       />
       <Pressable onPress={() => navigation.navigate('Detail' as never)}>
         <Text>Goto Detail</Text>

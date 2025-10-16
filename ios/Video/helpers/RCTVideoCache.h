@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)VC_StartProxy;
 + (void)VC_ConfigureCache:(NSUInteger)maxSizeMB;
 + (void)VC_PrefetchHead:(NSURL *) url seconds:(double) seconds bitratebps:(double) bitratebps;
-+ (NSURL *)proxyURLWithOriginalURL:(NSURL *)url;
++ (void)proxyURLWithOriginalURL:(NSURL *)url completion:(void (^)(NSURL *finalURL))completion;
 
 @end
 NS_ASSUME_NONNULL_END

@@ -8,7 +8,7 @@
 #import "RCTVideoCache.h"
 #import "KTVHTTPCache/KTVHTTPCache.h"
 
-static double maxSizeMB = 200; // 200MB
+static double maxSizeMB = 5000; // 5GB
 
 @implementation RCTVideoCache
 
@@ -40,7 +40,7 @@ static double maxSizeMB = 200; // 200MB
     if ([KTVHTTPCache respondsToSelector:@selector(logSetConsoleLogEnable:)]) {
       [KTVHTTPCache logSetConsoleLogEnable:NO];
     }
-    // if (err) NSLog(@"[VideoView] proxyStart error: %@", err);
+    if (err) NSLog(@"[VideoView] proxyStart error: %@", err);
   });
 }
 
@@ -64,8 +64,33 @@ forHTTPHeaderField:@"Range"];
   }] resume];
 }
 
-+ (NSURL *)proxyURLWithOriginalURL:(NSURL *)url {
-  NSURL *proxyURL = [KTVHTTPCache proxyURLWithOriginalURL:url];
-  return proxyURL ?: url;
++ (void)proxyURLWithOriginalURL:(NSURL *)url completion:(void (^)(NSURL *finalURL))completion {
+  long long maxCacheBytes = [KTVHTTPCache cacheMaxCacheLength];
+  if (maxCacheBytes <= 0) {
+    maxCacheBytes = 300L * 1024L * 1024L;
+  }
+  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+  request.HTTPMethod = @"HEAD";
+  
+  NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:request
+                                                               completionHandler:^(NSData * _Nullable data,
+                                                                                   NSURLResponse * _Nullable response,
+                                                                                   NSError * _Nullable error) {
+    long long contentLength = response.expectedContentLength;
+    NSURL *finalURL = url;
+    
+    NSLog(@"⚠️ [VideoHelper] File too large for cache (%lld bytes > %lld bytes), using direct URL.",
+          contentLength, maxCacheBytes);
+    
+    if (!error && contentLength > 0 && contentLength <= maxCacheBytes) {
+      NSURL *proxyURL = [KTVHTTPCache proxyURLWithOriginalURL:url bindToLocalhost:NO];
+      if (proxyURL && [KTVHTTPCache proxyIsRunning]) {
+        finalURL = proxyURL;
+      }
+    }
+    if (completion) completion(finalURL);
+  }];
+  [task resume];
 }
+
 @end

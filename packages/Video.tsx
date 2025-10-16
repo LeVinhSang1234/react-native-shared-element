@@ -46,7 +46,7 @@ export interface VideoProps
   poster?: string | { uri: string } | number;
 }
 
-const config = { cacheMaxSize: 300 };
+const config = { cacheMaxSize: 200 }; // 2GB
 
 const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
   const {

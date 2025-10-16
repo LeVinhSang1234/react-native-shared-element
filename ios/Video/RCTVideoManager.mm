@@ -58,28 +58,24 @@ static NSString * const kResizeModeCenter  = @"center";
 
 - (void)applySource:(NSString *)source {
   if ([source isEqualToString:_source]) return;
-  
-  [self willUnmount];
-  NSURL *videoURL = [RCTVideoHelper createVideoURL:source];
-  _player = [AVPlayer playerWithURL:videoURL];
-  
-  [self trackEventsPlayer];
-  [self createPlayerLayer];
-  
-  if (!_paused) [_player play];
-  _source = source;
+  [self applySourceFromCommand:source];
 }
 
 - (void)applySourceFromCommand:(NSString *)source {
   [self willUnmount];
-  NSURL *videoURL = [RCTVideoHelper createVideoURL:source];
-  _player = [AVPlayer playerWithURL:videoURL];
+  [self unmount];
   
-  [self trackEventsPlayer];
-  [self createPlayerLayer];
-  
-  if (!_paused) [_player play];
-  _source = source;
+  [RCTVideoHelper createVideoURL:source completion:^(NSURL *finalURL) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      self.player = [AVPlayer playerWithURL:finalURL];
+      [self trackEventsPlayer];
+      [self createPlayerLayer];
+      
+      self.source = source;
+      if(self.onUpdateLayout) self.onUpdateLayout();
+      if (!self.paused) [self.player play];
+   });
+  }];
 }
 
 - (void)applyResizeMode:(NSString *)resizeMode {
@@ -186,9 +182,11 @@ static NSString * const kResizeModeCenter  = @"center";
   } else {
     _player.rate = rate;
     _player.automaticallyWaitsToMinimizeStalling = NO;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-      self.player.automaticallyWaitsToMinimizeStalling = self.maxBuffer >= 3000;
-     });
+    if(_maxBuffer > 0) {
+      dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        self.player.automaticallyWaitsToMinimizeStalling = self.maxBuffer >= 3000;
+      });
+    }
   }
 }
 
@@ -198,7 +196,6 @@ static NSString * const kResizeModeCenter  = @"center";
   if (maxBuffer > 0) {
     _player.currentItem.preferredForwardBufferDuration = maxBuffer / 1000.0;
   }
-  _player.automaticallyWaitsToMinimizeStalling = maxBuffer >= 3000;
 }
 
 - (void)applyMaxRate:(double)maxBitRate {
@@ -298,12 +295,19 @@ static NSString * const kResizeModeCenter  = @"center";
   } else [self updateIdleTimer];
 }
 
+
 - (void)sendOnErrorEvent:(NSError *)error {
   if (!_eventEmitter || !error) return;
-  
   NSString *codeString = [NSString stringWithFormat:@"%ld", (long)error.code];
+  NSString *message = error.localizedDescription ?: @"Unknown error";
+  
+  NSError *under = error.userInfo[NSUnderlyingErrorKey];
+  if (under && under.localizedDescription) {
+    message = [message stringByAppendingFormat:@" | underlying: %@", under.localizedDescription];
+  }
+  
   facebook::react::VideoEventEmitter::OnError data = {
-    .message = [error.localizedDescription ?: @"Unknown error" UTF8String],
+    .message = [message UTF8String],
     .code = [codeString UTF8String],
   };
   _eventEmitter->onError(data);
@@ -421,11 +425,12 @@ static NSString * const kResizeModeCenter  = @"center";
 - (void)trackEventsPlayer {
   AVPlayerItem *item = _player.currentItem;
   if (!item) return;
-  
+  [_player addObserver:self forKeyPath:@"timeControlStatus" options:NSKeyValueObservingOptionNew context:nil];
+
   [item addObserver:self forKeyPath:@"status" options:NSKeyValueObservingOptionNew context:nil];
   [item addObserver:self forKeyPath:@"error" options:NSKeyValueObservingOptionNew context:nil];
-  [item addObserver:self forKeyPath:@"playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
   [item addObserver:self forKeyPath:@"playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
+  [_player addObserver:self forKeyPath:@"timeControlStatus" options:NSKeyValueObservingOptionNew context:nil];
   
   [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerItemDidFailToPlayToEnd:)
                                                name:AVPlayerItemFailedToPlayToEndTimeNotification object:item];
@@ -434,6 +439,24 @@ static NSString * const kResizeModeCenter  = @"center";
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)ctx {
+  
+  if (object == _player && [keyPath isEqualToString:@"timeControlStatus"]) {
+      switch (_player.timeControlStatus) {
+          case AVPlayerTimeControlStatusPaused:
+              [self sendBufferingEvent:NO];
+              break;
+          case AVPlayerTimeControlStatusWaitingToPlayAtSpecifiedRate:
+              [self sendBufferingEvent:YES];
+              break;
+          case AVPlayerTimeControlStatusPlaying:
+              [self sendBufferingEvent:NO];
+              break;
+          default:
+              break;
+      }
+      return;
+  }
+  
   if (object != _player.currentItem) return;
   
   if ([keyPath isEqualToString:@"status"] && _player.currentItem.status == AVPlayerItemStatusReadyToPlay) {
@@ -450,12 +473,13 @@ static NSString * const kResizeModeCenter  = @"center";
 }
 
 - (void)safeRemoveObservers {
+  @try { [_player removeObserver:self forKeyPath:@"timeControlStatus"]; } @catch (__unused NSException *e) {}
+  
   AVPlayerItem *item = _player.currentItem;
   if (!item) return;
   
   @try { [item removeObserver:self forKeyPath:@"status"]; } @catch (__unused NSException *e) {}
   @try { [item removeObserver:self forKeyPath:@"error"]; } @catch (__unused NSException *e) {}
-  @try { [item removeObserver:self forKeyPath:@"playbackBufferEmpty"]; } @catch (__unused NSException *e) {}
   @try { [item removeObserver:self forKeyPath:@"playbackLikelyToKeepUp"]; } @catch (__unused NSException *e) {}
 }
 

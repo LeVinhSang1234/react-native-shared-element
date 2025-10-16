@@ -42,54 +42,57 @@ static NSTimeInterval const kPosterMaxAge   = 6 * 60 * 60; // 6h
 
 #pragma mark - Video URL
 
-+ (nullable NSURL *)createVideoURL:(NSString *)source {
-  if (source.length == 0) return nil;
-
-  // Remote
++ (void) createVideoURL:(NSString *)source completion:(void (^)(NSURL *finalURL))completion {
+  if (source.length == 0) {
+    if (completion) completion(nil);
+    return;
+  }
+  NSURL *url = [NSURL URLWithString:source];
   if ([source hasPrefix:@"http"]) {
-    NSURL *url = [NSURL URLWithString:source];
-    if (!url) return nil;
-
-    [RCTVideoCache VC_StartProxy];
-    [RCTVideoCache VC_PrefetchHead:url seconds:3.0 bitratebps:10e6];
-
-    return [RCTVideoCache proxyURLWithOriginalURL:url];
+    if (url)  {
+      [RCTVideoCache VC_StartProxy];
+      [RCTVideoCache VC_PrefetchHead:url seconds:3.0 bitratebps:10e6];
+      [RCTVideoCache proxyURLWithOriginalURL:url completion:completion];
+      return;
+    }
+    if(completion) completion(nil);
+    return;
   }
-
-  // File://
+  
   if ([source hasPrefix:@"file://"]) {
-    return [NSURL URLWithString:source];
+    if (completion) completion(url);
+    return;
   }
-
-  // Local path
-  return [NSURL fileURLWithPath:source];
+  
+  NSURL *fileURL = [NSURL fileURLWithPath:source];
+  if (completion) completion(fileURL);
 }
 
 #pragma mark - Poster URL
 
 + (nullable NSURL *)createPosterURL:(NSString *)source {
   if (source.length == 0) return nil;
-
+  
   if ([source hasPrefix:@"http"]) {
     NSString *cacheDir = [NSTemporaryDirectory() stringByAppendingPathComponent:kPosterCacheDirName];
     [[NSFileManager defaultManager] createDirectoryAtPath:cacheDir
                               withIntermediateDirectories:YES
                                                attributes:nil
                                                     error:nil];
-
+    
     NSString *fileName = [source.lastPathComponent stringByAppendingFormat:@"_%lu",
                           (unsigned long)source.hash];
     NSString *filePath = [cacheDir stringByAppendingPathComponent:fileName];
     NSURL *fileURL = [NSURL fileURLWithPath:filePath];
-
+    
     NSDictionary *attrs = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:nil];
     NSDate *modDate = attrs[NSFileModificationDate];
     BOOL expired = modDate ? ([[NSDate date] timeIntervalSinceDate:modDate] > kPosterMaxAge) : YES;
-
+    
     if ([[NSFileManager defaultManager] fileExistsAtPath:filePath] && !expired) {
       return fileURL;
     }
-
+    
     NSData *imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:source]];
     if (imageData) {
       [imageData writeToFile:filePath atomically:YES];
@@ -97,11 +100,11 @@ static NSTimeInterval const kPosterMaxAge   = 6 * 60 * 60; // 6h
     }
     return [NSURL URLWithString:source];
   }
-
+  
   if ([source hasPrefix:@"file://"]) {
     return [NSURL URLWithString:source];
   }
-
+  
   return [NSURL fileURLWithPath:source];
 }
 

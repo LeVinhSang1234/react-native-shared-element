@@ -101,6 +101,9 @@ using namespace facebook::react;
     _videoManager.onPlayerReady = ^() {
       [wSelf applyFullscreen:wSelf.isFullscreen];
     };
+     _videoManager.onUpdateLayout = ^() {
+      [wSelf addPlayerLayerIfNeeded];
+    };
     
     [self addSubview:_videoPlayerPosterContainer];
     [self addSubview:_videoContainer];
@@ -159,7 +162,7 @@ using namespace facebook::react;
 }
 
 - (void)initialize {
-  [self createPlayerLayerIfNeeded];
+  [self addPlayerLayerIfNeeded];
   if(!_shareTagElement) {
     self.hidden = NO;
     [self showPosterNeeded];
@@ -220,6 +223,7 @@ using namespace facebook::react;
   [_videoPoster applyPosterResizeMode:posterResizeMode];
   
   [self applyFullscreen:p.fullscreen];
+  
   [super updateProps:props oldProps:oldProps];
 }
 
@@ -235,7 +239,7 @@ using namespace facebook::react;
   if(_otherView) {
     [self _returnPlayerToOtherIfNeeded];
     [_videoManager applySourceFromCommand:_videoManager.source];
-    [self createPlayerLayerIfNeeded];
+    [self addPlayerLayerIfNeeded];
   }
   _shareTagElement = newTag;
   [self tryRegisterRouteIfNeeded];
@@ -258,7 +262,7 @@ using namespace facebook::react;
 
 #pragma mark - Player layer
 
-- (void)createPlayerLayerIfNeeded {
+- (void)addPlayerLayerIfNeeded {
   if (CGRectIsEmpty(self.bounds)) return;
   if (_videoManager.playerLayer.superlayer != _videoPlayerPosterContainer.layer) {
     [_videoPlayerPosterContainer.layer addSublayer:_videoManager.playerLayer];
@@ -429,7 +433,7 @@ using namespace facebook::react;
     [_videoManager detachPlayer];
     
     _otherView.hidden = NO;
-    [_otherView createPlayerLayerIfNeeded];
+    [_otherView addPlayerLayerIfNeeded];
     [_otherView setNeedsLayout];
     [_otherView layoutIfNeeded];
     [_otherView showPosterNeeded];
@@ -444,7 +448,7 @@ using namespace facebook::react;
 - (void)removeOtherViewIfNeeded {
   if (_otherView.otherView) {
     [_otherView.otherView.videoManager applySourceFromCommand:_otherView.otherView.videoManager.source];
-    [_otherView.otherView createPlayerLayerIfNeeded];
+    [_otherView.otherView addPlayerLayerIfNeeded];
    
     __weak __typeof__(self) wSelf = self;
     _otherView.otherView.videoManager.onPlayerReady = ^{
@@ -525,7 +529,7 @@ using namespace facebook::react;
   } onCompleted:^{
     [toView.videoManager adoptPlayerFromManager:fromView.videoManager];
     [fromView.videoManager detachPlayer];
-    [toView createPlayerLayerIfNeeded];
+    [toView addPlayerLayerIfNeeded];
     
     fromView.isSharing = NO;
     toView.isSharing = NO;

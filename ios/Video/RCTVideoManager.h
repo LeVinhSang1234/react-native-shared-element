@@ -17,6 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy) AVLayerVideoGravity aVLayerVideoGravity;
 @property (nonatomic, assign) BOOL paused;
 @property (nonatomic, copy, nullable) void (^onPlayerReady)(void);
+@property (nonatomic, copy, nullable) void (^onUpdateLayout)(void);
 
 - (void)applySource:(NSString *)source;
 - (void)applySourceFromCommand:(NSString *)source;

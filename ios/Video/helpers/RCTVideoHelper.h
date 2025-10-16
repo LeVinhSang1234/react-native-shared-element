@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface RCTVideoHelper : NSObject
 
 /// Tạo URL phát video (tự bật proxy + prefetch nếu là http/https)
-+ (nullable NSURL *)createVideoURL:(NSString *)source;
++ (void)createVideoURL:(NSString *)source completion:(void (^)(NSURL *finalURL))completion;
 
 /// Tạo URL poster (cache file 1 ngày nếu là http/https)
 + (nullable NSURL *)createPosterURL:(NSString *)source;
