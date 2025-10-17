@@ -14,59 +14,50 @@ import kotlin.math.abs
  * - Expose start/stop theo từng ticker + startIfNeeded tiện dùng
  */
 class RCTVideoTickers(
-        private val hostView: View,
-        private val getReactContext: () -> ReactContext?,
-        private val getViewId: () -> Int,
-        private val getPlayer: () -> Player?,
-        private val getIntervalMs: () -> Long,
-        private val isProgressEnabled: () -> Boolean,
-        private val isOnLoadEnabled: () -> Boolean
+    private val hostView: View,
+    private val getReactContext: () -> ReactContext?,
+    private val getViewId: () -> Int,
+    private val getPlayer: () -> Player?,
+    private val getIntervalMs: () -> Long,
+    private val getMemoryDebugIntervalMs: () -> Long,
+    private val isProgressEnabled: () -> Boolean,
+    private val isOnLoadEnabled: () -> Boolean,
+    private var isMemoryDebugEnabled: () -> Boolean
+
 ) {
     // cache lần cuối của onLoad để chỉ emit khi thay đổi
     private var lastOnLoadLoaded: Double? = null
     private var lastOnLoadDuration: Double? = null
 
-    private fun logMemory(tag: String = "VideoPlayer") {
-        val runtime = Runtime.getRuntime()
-        val usedHeap = runtime.totalMemory() - runtime.freeMemory()
-        val usedNative = android.os.Debug.getNativeHeapAllocatedSize()
-        val totalUsed = usedHeap + usedNative
-
-        android.util.Log.d(
-            "RCTVideoView",
-            "💾 [$tag] heap=${usedHeap / 1048576}MB, native=${usedNative / 1048576}MB, total=${totalUsed / 1048576}MB"
-        )
-    }
-
     // ====== progress ticker ======
     private val progressTick =
-            object : Runnable {
-                override fun run() {
-                    if (!isProgressEnabled()) return
-                    val p = getPlayer() ?: return reSchedule()
-                    val react = getReactContext() ?: return reSchedule()
-                    if (!react.hasActiveCatalystInstance() ||
-                                    !ViewCompat.isAttachedToWindow(hostView)
-                    )
-                            return reSchedule()
+        object : Runnable {
+            override fun run() {
+                if (!isProgressEnabled()) return
+                val p = getPlayer() ?: return reSchedule()
+                val react = getReactContext() ?: return reSchedule()
+                if (!react.hasActiveCatalystInstance() ||
+                    !ViewCompat.isAttachedToWindow(hostView)
+                )
+                    return reSchedule()
 
-                    val viewId = getViewId().takeIf { it > 0 } ?: return reSchedule()
-                    val dispatcher =
-                            UIManagerHelper.getEventDispatcherForReactTag(react, viewId)
-                                    ?: return reSchedule()
+                val viewId = getViewId().takeIf { it > 0 } ?: return reSchedule()
+                val dispatcher =
+                    UIManagerHelper.getEventDispatcherForReactTag(react, viewId)
+                        ?: return reSchedule()
 
-                    val pos = (p.currentPosition.coerceAtLeast(0L)) / 1000.0
-                    val dur = if (p.duration > 0) p.duration / 1000.0 else null
-                    val buf = (p.bufferedPosition.coerceAtLeast(0L)) / 1000.0
-                    val playable = dur?.let { minOf(buf, it) } ?: buf
-                    // logMemory()
-                    dispatcher.dispatchEvent(OnProgressEvent(viewId, pos, dur, playable))
-                    reSchedule()
-                }
-                private fun reSchedule() {
-                    hostView.postDelayed(this, getIntervalMs())
-                }
+                val pos = (p.currentPosition.coerceAtLeast(0L)) / 1000.0
+                val dur = if (p.duration > 0) p.duration / 1000.0 else null
+                val buf = (p.bufferedPosition.coerceAtLeast(0L)) / 1000.0
+                val playable = dur?.let { minOf(buf, it) } ?: buf
+                dispatcher.dispatchEvent(OnProgressEvent(viewId, pos, dur, playable))
+                reSchedule()
             }
+
+            private fun reSchedule() {
+                hostView.postDelayed(this, getIntervalMs())
+            }
+        }
 
     fun startProgressIfNeeded() {
         stopProgress()
@@ -80,37 +71,38 @@ class RCTVideoTickers(
 
     // ====== onLoad ticker ======
     private val onLoadTick =
-            object : Runnable {
-                override fun run() {
-                    if (!isOnLoadEnabled()) return
-                    val p = getPlayer() ?: return reSchedule()
-                    if (p.playbackState != Player.STATE_READY) return reSchedule()
+        object : Runnable {
+            override fun run() {
+                if (!isOnLoadEnabled()) return
+                val p = getPlayer() ?: return reSchedule()
+                if (p.playbackState != Player.STATE_READY) return reSchedule()
 
-                    val react = getReactContext() ?: return reSchedule()
-                    if (!react.hasActiveCatalystInstance() ||
-                                    !ViewCompat.isAttachedToWindow(hostView)
-                    )
-                            return reSchedule()
+                val react = getReactContext() ?: return reSchedule()
+                if (!react.hasActiveCatalystInstance() ||
+                    !ViewCompat.isAttachedToWindow(hostView)
+                )
+                    return reSchedule()
 
-                    val viewId = getViewId().takeIf { it > 0 } ?: return reSchedule()
-                    val dispatcher =
-                            UIManagerHelper.getEventDispatcherForReactTag(react, viewId)
-                                    ?: return reSchedule()
+                val viewId = getViewId().takeIf { it > 0 } ?: return reSchedule()
+                val dispatcher =
+                    UIManagerHelper.getEventDispatcherForReactTag(react, viewId)
+                        ?: return reSchedule()
 
-                    val loaded = (p.bufferedPosition.coerceAtLeast(0L)) / 1000.0
-                    val duration = if (p.duration > 0) p.duration / 1000.0 else 0.0
-
-                    if (hasOnLoadChanged(loaded, duration)) {
-                        dispatcher.dispatchEvent(OnLoadEvent(viewId, loaded, duration))
-                        lastOnLoadLoaded = loaded
-                        lastOnLoadDuration = duration
-                    }
-                    reSchedule()
+                val loaded = (p.bufferedPosition.coerceAtLeast(0L)) / 1000.0
+                val duration = if (p.duration > 0) p.duration / 1000.0 else 0.0
+                if (hasOnLoadChanged(loaded, duration)) {
+                    dispatcher.dispatchEvent(OnLoadEvent(viewId, loaded, duration))
+                    lastOnLoadLoaded = loaded
+                    lastOnLoadDuration = duration
                 }
-                private fun reSchedule() {
-                    hostView.postDelayed(this, getIntervalMs())
-                }
+                if (loaded >= duration) stopOnLoad()
+                else reSchedule()
             }
+
+            private fun reSchedule() {
+                hostView.postDelayed(this, getIntervalMs())
+            }
+        }
 
     private fun hasOnLoadChanged(loaded: Double, duration: Double): Boolean {
         val prevL = lastOnLoadLoaded
@@ -137,5 +129,45 @@ class RCTVideoTickers(
     fun resetOnLoadCache() {
         lastOnLoadLoaded = null
         lastOnLoadDuration = null
+    }
+
+    // ====== onMemory ticker ======
+    private val memoryTick =
+        object : Runnable {
+            override fun run() {
+                if (!isMemoryDebugEnabled()) return
+                val react = getReactContext() ?: return reSchedule()
+                if (!react.hasActiveCatalystInstance() ||
+                    !ViewCompat.isAttachedToWindow(hostView)
+                ) return reSchedule()
+
+                val viewId = getViewId().takeIf { it > 0 } ?: return reSchedule()
+                val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(react, viewId)
+                    ?: return reSchedule()
+
+                val runtime = Runtime.getRuntime()
+                val usedHeap = runtime.totalMemory() - runtime.freeMemory()
+                val usedNative = android.os.Debug.getNativeHeapAllocatedSize()
+
+                val heapMB = usedHeap / 1048576.0
+                val nativeMB = usedNative / 1048576.0
+
+                dispatcher.dispatchEvent(OnMemoryDebugEvent(viewId, heapMB, nativeMB))
+                reSchedule()
+            }
+
+            private fun reSchedule() {
+                hostView.postDelayed(this, getMemoryDebugIntervalMs()) // 5 giây/lần
+            }
+        }
+
+    fun startOnMemoryDebugIfNeeded() {
+        stopOnMemoryDebug()
+        if(!isMemoryDebugEnabled()) return
+        hostView.post(memoryTick)
+    }
+
+    fun stopOnMemoryDebug() {
+        hostView.removeCallbacks(memoryTick)
     }
 }

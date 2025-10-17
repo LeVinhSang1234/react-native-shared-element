@@ -68,9 +68,12 @@ class RCTVideoView : FrameLayout {
     // ===== Events / Tickers =====
     private var lastIsBuffering: Boolean? = null
     private var progressIntervalMs = 250L
+    private var memoryDebugIntervalMs = 5000L
     private var isProgressEnabled = false
     private var isOnLoadEnabled = false
+    private var isOnMemoryDebugEnabled = false
     private var didEmitLoadStartForCurrentItem = false
+    private var didEmitLoadForCurrentItem = false
     private var shareTagElement: String? = null
     private var sharingAnimatedDuration: Double = 260.0
     private var fullscreenDialog: FullscreenVideoDialog? = null
@@ -90,8 +93,10 @@ class RCTVideoView : FrameLayout {
             getViewId = { id },
             getPlayer = { player },
             getIntervalMs = { progressIntervalMs },
+            getMemoryDebugIntervalMs = { memoryDebugIntervalMs },
             isProgressEnabled = { isProgressEnabled },
-            isOnLoadEnabled = { isOnLoadEnabled }
+            isOnLoadEnabled = { isOnLoadEnabled },
+            isMemoryDebugEnabled = { isOnMemoryDebugEnabled }
         )
     }
 
@@ -210,10 +215,10 @@ class RCTVideoView : FrameLayout {
                     when (state) {
                         Player.STATE_BUFFERING -> maybeDispatchBuffering(true)
                         Player.STATE_READY -> {
-                            maybeDispatchBuffering(false)
                             maybeEmitOnLoadStartOnce()
+                            maybeDispatchBuffering(false)
+                            maybeEmitOnLoadOnce()
                             tickers.startProgressIfNeeded()
-                            tickers.startOnLoadIfNeeded()
                             updateKeepScreenOn()
                         }
 
@@ -394,6 +399,17 @@ class RCTVideoView : FrameLayout {
 
     fun setStopWhenPaused(value: Boolean) {
         stopWhenPaused = value
+    }
+
+    fun setEnableOnMemoryDebug(value: Boolean) {
+        isOnMemoryDebugEnabled = value
+        if (value) tickers.startOnMemoryDebugIfNeeded()
+        else tickers.stopOnMemoryDebug()
+    }
+
+    fun setMemoryDebugInterval(ms: Double) {
+        memoryDebugIntervalMs = ms.toLong().coerceAtLeast(50L)
+        if (isOnMemoryDebugEnabled) tickers.startOnMemoryDebugIfNeeded()
     }
 
     fun setRate(rate: Double) {
@@ -716,6 +732,12 @@ class RCTVideoView : FrameLayout {
         }
     }
 
+    private fun maybeEmitOnLoadOnce() {
+        if (didEmitLoadForCurrentItem) return
+        tickers.startOnLoadIfNeeded()
+        didEmitLoadForCurrentItem = true
+    }
+
     private fun maybeDispatchBuffering(isBuffering: Boolean) {
         if (lastIsBuffering == isBuffering) return
         lastIsBuffering = isBuffering
@@ -805,6 +827,7 @@ class RCTVideoView : FrameLayout {
         videoH = 0
         lastIsBuffering = null
         didEmitLoadStartForCurrentItem = false
+        didEmitLoadForCurrentItem = false
 
         posterBitmap?.recycle()
         posterBitmap = null
@@ -931,10 +954,11 @@ class RCTVideoView : FrameLayout {
         when (p.playbackState) {
             Player.STATE_BUFFERING -> maybeDispatchBuffering(true)
             Player.STATE_READY -> {
-                maybeDispatchBuffering(false)
                 maybeEmitOnLoadStartOnce()
+                maybeDispatchBuffering(false)
+                maybeEmitOnLoadOnce()
                 tickers.startProgressIfNeeded()
-                tickers.startOnLoadIfNeeded()
+                updateKeepScreenOn()
             }
 
             Player.STATE_ENDED -> {

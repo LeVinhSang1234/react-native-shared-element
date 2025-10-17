@@ -78,10 +78,6 @@ forHTTPHeaderField:@"Range"];
                                                                                    NSError * _Nullable error) {
     long long contentLength = response.expectedContentLength;
     NSURL *finalURL = url;
-    
-    NSLog(@"⚠️ [VideoHelper] File too large for cache (%lld bytes > %lld bytes), using direct URL.",
-          contentLength, maxCacheBytes);
-    
     if (!error && contentLength > 0 && contentLength <= maxCacheBytes) {
       NSURL *proxyURL = [KTVHTTPCache proxyURLWithOriginalURL:url bindToLocalhost:NO];
       if (proxyURL && [KTVHTTPCache proxyIsRunning]) {

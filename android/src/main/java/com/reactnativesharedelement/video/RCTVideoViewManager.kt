@@ -184,6 +184,16 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
         view.setStopWhenPaused(stopWhenPaused)
     }
 
+    @ReactProp(name = "enableOnMemoryDebug")
+    fun setEnableOnMemoryDebug(view: RCTVideoView, value: Boolean) {
+        view.setEnableOnMemoryDebug(value)
+    }
+
+    @ReactProp(name = "memoryDebugInterval")
+    fun setMemoryDebugInterval(view: RCTVideoView, ms: Double) {
+        view.setMemoryDebugInterval(ms)
+    }
+
     override fun receiveCommand(view: RCTVideoView, commandId: String, args: ReadableArray?) {
         when (commandId) {
             "setSeekCommand" -> {

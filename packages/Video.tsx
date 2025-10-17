@@ -39,6 +39,7 @@ export interface VideoProps
     | 'cacheMaxSize'
     | 'fullscreenMode'
     | 'bgColor'
+    | 'enableOnMemoryDebug'
   > {
   resizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
   posterResizeMode?: 'contain' | 'cover' | 'stretch' | 'center';
@@ -46,13 +47,14 @@ export interface VideoProps
   poster?: string | { uri: string } | number;
 }
 
-const config = { cacheMaxSize: 200 }; // 2GB
+const config = { cacheMaxSize: 5000 }; // 5GB
 
 const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
   const {
     source,
     poster,
     progressInterval = 250,
+    memoryDebugInterval = 5000,
     volume = 1,
     rate = 1,
     useOkHttp = true,
@@ -115,8 +117,10 @@ const Video = forwardRef<VideoRef, VideoProps>((props, ref) => {
       source={_source}
       poster={_poster}
       enableProgress={!!p.onProgress}
+      enableOnMemoryDebug={!!p.onMemoryDebug}
       enableOnLoad={!!p.onLoad}
       progressInterval={progressInterval}
+      memoryDebugInterval={memoryDebugInterval}
       volume={volume}
       cacheMaxSize={config.cacheMaxSize}
       bgColor={bg as string}

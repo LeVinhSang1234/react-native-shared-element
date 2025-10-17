@@ -35,6 +35,12 @@ export interface OnBufferingData {
 
 export interface OnEndData {}
 
+export interface OnMemoryData {
+  heapMB: Double;
+  nativeMB: Double;
+  message: string;
+}
+
 export interface BufferConfig {
   readonly minBufferMs?: Double;
   readonly maxBufferMs?: Double;
@@ -96,10 +102,23 @@ export interface VideoNativeProps extends ViewProps {
    * but playback will need to re-prepare when resumed.
    *
    * Default: false (normal pause behavior — keeps buffer in memory)
-   *
-   * Android only.
    */
   readonly stopWhenPaused?: boolean;
+
+  /**
+   * ⚙️ Android only.
+   *
+   * Periodically reports memory usage (heap, native, total) while video is active.
+   * Useful for debugging leaks or performance bottlenecks.
+   *
+   * The event fires roughly every 3 seconds when `debugMemory` is true.
+   */
+  readonly onMemoryDebug?: BubblingEventHandler<OnMemoryData>;
+  readonly enableOnMemoryDebug?: boolean;
+  /**
+   * ⚙️ Android only.
+   */
+  readonly memoryDebugInterval?: Double;
 }
 
 interface NativeCommands {

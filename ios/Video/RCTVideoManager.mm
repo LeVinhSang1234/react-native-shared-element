@@ -68,8 +68,7 @@ static NSString * const kResizeModeCenter  = @"center";
   [RCTVideoHelper createVideoURL:source completion:^(NSURL *finalURL) {
     dispatch_async(dispatch_get_main_queue(), ^{
       self.player = [AVPlayer playerWithURL:finalURL];
-      [self trackEventsPlayer];
-      [self createPlayerLayer];
+      [self _attachStolenPlayer];
       
       self.source = source;
       if(self.onUpdateLayout) self.onUpdateLayout();
@@ -291,7 +290,7 @@ static NSString * const kResizeModeCenter  = @"center";
   [self sendEndEvent];
   if (_loop) {
     [_player seekToTime:kCMTimeZero];
-    [self applyPaused:_paused];
+    [self applyPausedFromCommand:_paused];
   } else [self updateIdleTimer];
 }
 
@@ -399,9 +398,9 @@ static NSString * const kResizeModeCenter  = @"center";
     loadedDuration = CMTimeGetSeconds(CMTimeRangeGetEnd(r));
     if (isnan(loadedDuration)) loadedDuration = 0.0;
   }
-  
   if (loadedDuration != _lastLoadedDuration) {
     _lastLoadedDuration = loadedDuration;
+    if (loadedDuration >= duration) [self removeOnLoadTracking];
     if (_eventEmitter) {
       facebook::react::VideoEventEmitter::OnLoad data = {
         .loadedDuration = loadedDuration,
@@ -584,10 +583,7 @@ static NSString * const kResizeModeCenter  = @"center";
   return stolen;
 }
 
-// Internal: attach player + layer + observers + timers theo flags hiện tại
-- (void)_attachStolenPlayer:(AVPlayer *)stolen {
-  _player = stolen;
-  
+- (void)_attachStolenPlayer {
   [self createPlayerLayer];
   [self trackEventsPlayer];
   

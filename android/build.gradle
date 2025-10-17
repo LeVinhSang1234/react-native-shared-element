@@ -1,96 +1,21 @@
-def getExtOrDefault(name, defaultValue) {
-    return rootProject.ext.has(name) ? rootProject.ext.get(name) : defaultValue
-}
-
-def isNewArchitectureEnabled() {
-    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
-}
-
-apply plugin: 'com.android.library'
-apply plugin: 'org.jetbrains.kotlin.android'
-
-if (isNewArchitectureEnabled()) {
-    apply plugin: "com.facebook.react"
-}
-
-android {
-    namespace "com.shareelement"
-    compileSdkVersion getExtOrDefault('compileSdkVersion', 36)
-
-    defaultConfig {
-        minSdkVersion getExtOrDefault('minSdkVersion', 24)
-        targetSdkVersion getExtOrDefault('targetSdkVersion', 36)
-
-        buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
-        ndk {
-            abiFilters(*reactNativeArchitectures())
-        }
-
-        consumerProguardFiles 'consumer-rules.pro'
+buildscript {
+    ext {
+        buildToolsVersion = "36.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 36
+        targetSdkVersion = 36
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.1.20"
     }
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+    repositories {
+        google()
+        mavenCentral()
     }
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-    packagingOptions {
-        exclude "**/libreact_render*.so"
-    }
-    packaging {
-        resources {
-            excludes += [
-                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
-            ]
-        }
-    }
-    sourceSets.main {
-        java {
-            if (isNewArchitectureEnabled()) {
-                srcDirs += [
-                        "src/fabric/java",
-                        "${project.buildDir}/generated/source/codegen/java"
-                ]
-            } else {
-                srcDirs += [
-                        "src/paper/java",
-                        "src/main/java"
-                ]
-            }
-        }
-        manifest.srcFile "src/main/AndroidManifest.xml"
+    dependencies {
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
     }
 }
 
-def reactNativeArchitectures() {
-    def value = project.getProperties().get("reactNativeArchitectures")
-    return value ? value.split(",") : [
-            "armeabi-v7a",
-            "x86",
-            "x86_64",
-            "arm64-v8a"
-    ]
-}
-
-repositories {
-    google()
-    mavenCentral()
-    maven { url "$rootDir/../node_modules/react-native/android" }
-}
-
-dependencies {
-    implementation 'com.facebook.react:react-android'
-
-    def kotlin_version = getExtOrDefault('kotlinVersion', "2.0.0")
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-
-    implementation "androidx.media3:media3-exoplayer:1.8.0"
-    implementation "androidx.media3:media3-ui:1.8.0"
-    implementation "androidx.media3:media3-common:1.8.0"
-    implementation "androidx.media3:media3-datasource-okhttp:1.8.0"
-    implementation "androidx.media3:media3-datasource:1.8.0"
-    implementation "com.squareup.okhttp3:okhttp:5.2.1"
-    implementation "com.squareup.okhttp3:logging-interceptor:5.2.1"
-    implementation "com.squareup.okhttp3:okhttp-dnsoverhttps:5.2.1"
-}
+apply plugin: "com.facebook.react.rootproject"
