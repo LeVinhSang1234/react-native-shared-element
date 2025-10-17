@@ -16,7 +16,6 @@ export default function Detail() {
           uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         }}
         sharingAnimatedDuration={300}
-        paused={copy}
       />
       {/* {copy ? (
         <Video

@@ -22,7 +22,7 @@ export default function Home() {
         sharingAnimatedDuration={300}
         onError={e => console.log(e.nativeEvent)}
         posterResizeMode="contain"
-        stopWhenPaused
+        paused
       />
       <Pressable onPress={() => navigation.navigate('Detail' as never)}>
         <Text>Goto Detail</Text>

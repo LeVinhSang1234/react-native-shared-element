@@ -14,7 +14,7 @@ if (isNewArchitectureEnabled()) {
 }
 
 android {
-    namespace "com.shareelement"
+    namespace "com.reactnativesharedelement"
     compileSdkVersion getExtOrDefault('compileSdkVersion', 36)
 
     defaultConfig {
@@ -80,9 +80,10 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.facebook.react:react-android'
-
+    def okhttp_version = getExtOrDefault('okhttpVersion', "4.12.0")
     def kotlin_version = getExtOrDefault('kotlinVersion', "2.0.0")
+
+    implementation 'com.facebook.react:react-android'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     implementation "androidx.media3:media3-exoplayer:1.8.0"
@@ -90,7 +91,8 @@ dependencies {
     implementation "androidx.media3:media3-common:1.8.0"
     implementation "androidx.media3:media3-datasource-okhttp:1.8.0"
     implementation "androidx.media3:media3-datasource:1.8.0"
-    implementation "com.squareup.okhttp3:okhttp:5.2.1"
-    implementation "com.squareup.okhttp3:logging-interceptor:5.2.1"
-    implementation "com.squareup.okhttp3:okhttp-dnsoverhttps:5.2.1"
+    
+    implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
+    implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
+    implementation "com.squareup.okhttp3:okhttp-dnsoverhttps:$okhttp_version"
 }

@@ -12,7 +12,7 @@ import androidx.media3.ui.PlayerView
 class FullscreenVideoDialog(
     context: Context,
     private val playerView: PlayerView,
-    private val onDismissed: (PlayerView) -> Unit // callback
+    private val onDismissed: (PlayerView) -> Unit
 ) : Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen) {
 
     override fun onCreate(savedInstanceState: Bundle?) {

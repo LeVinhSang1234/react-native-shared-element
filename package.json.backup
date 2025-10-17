@@ -13,9 +13,9 @@
     "ios/View/",
     "ios/common/",
     "ios/navigation/",
-    "android/src/main/java/com/reactnativesharedelement/view/",
-    "android/src/main/java/com/reactnativesharedelement/video/",
+    "android/src/main/java/com/reactnativesharedelement/",
     "android/build.gradle",
+    "android/src/main/AndroidManifest.xml",
     "LICENSE"
   ],
   "scripts": {
@@ -34,7 +34,7 @@
     "node": ">=18"
   },
   "codegenConfig": {
-    "name": "shareelement",
+    "name": "reactnativesharedelement",
     "type": "all",
     "jsSrcsDir": "natives",
     "android": {

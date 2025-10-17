@@ -218,13 +218,4 @@ class RCTVideoViewManager : ViewGroupManager<RCTVideoView>() {
             }
         }
     }
-
-    override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> =
-            mutableMapOf(
-                    "onLoadStart" to mutableMapOf("registrationName" to "onLoadStart"),
-                    "onLoad" to mutableMapOf("registrationName" to "onLoad"),
-                    "onProgress" to mutableMapOf("registrationName" to "onProgress"),
-                    "onError" to mutableMapOf("registrationName" to "onError"),
-                    "onBuffering" to mutableMapOf("registrationName" to "onBuffering")
-            )
 }
