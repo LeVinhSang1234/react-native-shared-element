@@ -14,8 +14,8 @@
 #import "RCTViewHelper.h"
 #import "UIView+NavTitleCache.h"
 
-#import <react/renderer/components/shareelement/Props.h>
-#import <react/renderer/components/shareelement/ComponentDescriptors.h>
+#import <react/renderer/components/reactnativesharedelement/Props.h>
+#import <react/renderer/components/reactnativesharedelement/ComponentDescriptors.h>
 
 // Import support navigation
 #import "UIView+NearestVC.h"

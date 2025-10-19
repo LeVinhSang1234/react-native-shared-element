@@ -43,7 +43,7 @@
     "node": ">=20"
   },
   "codegenConfig": {
-    "name": "shareelement",
+    "name": "reactnativesharedelement",
     "type": "all",
     "jsSrcsDir": "natives",
     "android": {

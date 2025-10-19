@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <shareelement/shareelement.h>
+#import <reactnativesharedelement/reactnativesharedelement.h>
 
 NS_ASSUME_NONNULL_BEGIN
 

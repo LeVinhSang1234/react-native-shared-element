@@ -127,6 +127,7 @@ class RCTVideoView : FrameLayout {
                 useController = false
                 setBackgroundColor(Color.TRANSPARENT)
                 setShutterBackgroundColor(Color.TRANSPARENT)
+                alpha = 0f
             }
         posterView =
             ImageView(context).apply {
@@ -703,6 +704,7 @@ class RCTVideoView : FrameLayout {
             invalidate()
         }
         showPosterNeeded()
+        playerView.alpha = 1f
     }
 
     private fun layoutChildToRect(rect: Rect) {
@@ -777,13 +779,26 @@ class RCTVideoView : FrameLayout {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         playerView.player = player
-        if (videoW > 0 && videoH > 0) applyAspectNow()
+        if (videoW > 0 && videoH > 0) {
+            post {
+                applyAspectNow()
+            }
+        }
         updatePlayState()
         if (shareTagElement != null && !isSharing) shareElement() else alpha = 1f
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if (changed) {
+           post {
+               applyAspectNow()
+           }
+        }
     }
 
     fun dealloc() {
@@ -874,10 +889,7 @@ class RCTVideoView : FrameLayout {
     // ===== Share Element (Android version swap iOS) =====
     private fun shareElement() {
         val other = RCTVideoTag.getOtherViewForTag(this, shareTagElement)
-        if (other == null || other.isDealloc) {
-            alpha = 1f
-            return
-        }
+        if (other == null || other.isDealloc) return
         otherViewSameWindow = other.parent === parent
         otherView = other
         post {

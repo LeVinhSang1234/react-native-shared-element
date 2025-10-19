@@ -5,7 +5,6 @@
 //  Created by Sang Lv on 28/9/25.
 //
 
-#import <FBReactNativeSpec/FBReactNativeSpec.h>
 #import <UIKit/UIKit.h>
 #import <objc/message.h>
 #import "RCTNativeEarly.h"

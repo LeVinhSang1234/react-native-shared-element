@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import <AVKit/AVKit.h>
-#import <react/renderer/components/ShareElement/EventEmitters.h>
+#import <react/renderer/components/reactnativesharedelement/EventEmitters.h>
 
 NS_ASSUME_NONNULL_BEGIN
 @interface RCTVideoManager : NSObject

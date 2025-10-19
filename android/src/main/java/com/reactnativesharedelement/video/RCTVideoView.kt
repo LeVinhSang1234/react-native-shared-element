@@ -59,7 +59,7 @@ class RCTVideoView : FrameLayout {
     private var posterUrl: String? = null
     private var isDealloc = false
     private var isFullscreen = false
-    private var externallyPaused = false
+    private var isPaused = false
     internal var resizeModeStr: String = "contain"
         private set
     private var isMuted = false
@@ -127,6 +127,7 @@ class RCTVideoView : FrameLayout {
                 useController = false
                 setBackgroundColor(Color.TRANSPARENT)
                 setShutterBackgroundColor(Color.TRANSPARENT)
+                alpha = 0f
             }
         posterView =
             ImageView(context).apply {
@@ -227,7 +228,7 @@ class RCTVideoView : FrameLayout {
                             maybeDispatchBuffering(false)
                             if (isLooping) {
                                 p.seekTo(0)
-                                p.playWhenReady = !externallyPaused
+                                p.playWhenReady = !isPaused
                             } else {
                                 tickers.stopProgress()
                                 tickers.stopOnLoad()
@@ -296,7 +297,7 @@ class RCTVideoView : FrameLayout {
     }
 
     fun setPaused(paused: Boolean) {
-        externallyPaused = paused
+        isPaused = paused
         if (!paused) {
             posterView.visibility = GONE
             tickers.startProgressIfNeeded()
@@ -338,7 +339,7 @@ class RCTVideoView : FrameLayout {
     fun showPosterNeeded() {
         if (!isSharing) return
         val neverPlayed = (player?.currentPosition ?: 0L) <= 50L
-        val shouldShow = (externallyPaused && neverPlayed) || player == null
+        val shouldShow = (isPaused && neverPlayed) || player == null
         posterView.visibility = if (shouldShow) VISIBLE else GONE
     }
 
@@ -352,7 +353,9 @@ class RCTVideoView : FrameLayout {
     fun setResizeMode(mode: String?) {
         exitFullscreen()
         resizeModeStr = (mode ?: "contain").lowercase().trim()
-        applyAspectNow()
+        post {
+            applyAspectNow()
+        }
     }
 
     fun setEnableProgress(value: Boolean) {
@@ -561,20 +564,20 @@ class RCTVideoView : FrameLayout {
         p.setMediaItem(MediaItem.fromUri(url))
         post {
             p.prepare()
-            p.playWhenReady = !externallyPaused
+            p.playWhenReady = !isPaused
         }
     }
 
     private fun updatePlayState() {
         if (stopWhenPaused) {
             try {
-                if (externallyPaused) player?.stop()
+                if (isPaused) player?.stop()
                 else player?.prepare()
             } catch (e: Exception) {
                 dispatchErrorSafe(e.localizedMessage, "E_STOP_WHEN_PAUSED")
             }
         }
-        player?.playWhenReady = !externallyPaused
+        player?.playWhenReady = !isPaused
     }
 
     private fun applyLoop(p: ExoPlayer) {
@@ -701,6 +704,7 @@ class RCTVideoView : FrameLayout {
             invalidate()
         }
         showPosterNeeded()
+        playerView.alpha = 1f
     }
 
     private fun layoutChildToRect(rect: Rect) {
@@ -775,13 +779,26 @@ class RCTVideoView : FrameLayout {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         playerView.player = player
-        if (videoW > 0 && videoH > 0) applyAspectNow()
+        if (videoW > 0 && videoH > 0) {
+            post {
+                applyAspectNow()
+            }
+        }
         updatePlayState()
         if (shareTagElement != null && !isSharing) shareElement() else alpha = 1f
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if (changed) {
+           post {
+               applyAspectNow()
+           }
+        }
     }
 
     fun dealloc() {
@@ -857,9 +874,11 @@ class RCTVideoView : FrameLayout {
         other.videoH = videoH
         other.player = null
         other.playerView.player = null
+        if(other.isPaused && other.stopWhenPaused) {
+            movingPlayer.prepare()
+        }
         other.player = movingPlayer
         other.playerView.player = movingPlayer
-
         other.applyAspectNow()
         other.applyLoop(movingPlayer)
         other.applyMuted(movingPlayer)
@@ -870,10 +889,7 @@ class RCTVideoView : FrameLayout {
     // ===== Share Element (Android version swap iOS) =====
     private fun shareElement() {
         val other = RCTVideoTag.getOtherViewForTag(this, shareTagElement)
-        if (other == null || other.isDealloc) {
-            alpha = 1f
-            return
-        }
+        if (other == null || other.isDealloc) return
         otherViewSameWindow = other.parent === parent
         otherView = other
         post {
@@ -993,7 +1009,7 @@ class RCTVideoView : FrameLayout {
         videoW = other.videoW
         videoH = other.videoH
         currentSource = other.currentSource
-        externallyPaused = other.externallyPaused
+        isPaused = other.isPaused
         isLooping = other.isLooping
         isMuted = other.isMuted
         rememberedVolume = other.rememberedVolume
@@ -1010,6 +1026,9 @@ class RCTVideoView : FrameLayout {
             0,
             LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         )
+        if(other.stopWhenPaused && other.isPaused) {
+            movingPlayer.prepare()
+        }
         applyAllPlayerProps(movingPlayer)
         alpha = 1f
     }
