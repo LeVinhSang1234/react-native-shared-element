@@ -22,7 +22,7 @@ A custom React Native component for shared element transitions, supporting both 
 
 ## Source
 
-GitHub: [https://github.com/LeVinhSang1234/React-Native-Shared-Element/tree/share-element](https://github.com/LeVinhSang1234/React-Native-Shared-Element/tree/share-element)
+GitHub: [https://github.com/LeVinhSang1234/react-native-shared-element](https://github.com/LeVinhSang1234/react-native-shared-element)
 
 ---
 
