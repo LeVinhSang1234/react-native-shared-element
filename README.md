@@ -86,7 +86,7 @@ Native code is autolinked. No extra steps needed.
 If you are using React Navigation please add the following command to your app's `package.json`:
 
 ```json
-"postinstall": "if [ -d ./node_modules/@react-navigation/core/lib/module ] && [ -d ./node_modules/@rn-slv/react-native-shared-element ]; then cp ./node_modules/@rn-slv/react-native-shared-element/packages/auto-navigation.txt ./node_modules/@react-navigation/core/lib/module/useNavigation.js fi"
+"postinstall": "if [ -d ./node_modules/@react-navigation/core/lib/module ] && [ -d ./node_modules/@rn-slv/react-native-shared-element ]; then cp ./node_modules/@rn-slv/react-native-shared-element/packages/auto-navigation.txt ./node_modules/@react-navigation/core/lib/module/useNavigation.js; fi"
 ```
 
 This ensures the navigation patch is always applied after installing dependencies.
