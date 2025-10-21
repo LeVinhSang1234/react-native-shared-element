@@ -97,7 +97,7 @@ This ensures the navigation patch is always applied after installing dependencie
 
 # Shared Video
 
-You can change the video cache size limit by calling the function `setCacheMaxSize(size: number)` (unit: MB), imported from the package. The default is 300MB.
+You can change the video cache size limit by calling the function `setCacheMaxSize(size: number)` (unit: MB), imported from the package. The default is 5000MB (5GB).
 
 **Tip:** Call `setCacheMaxSize` as early as possible in your app (ideally before any video is loaded) to ensure the cache limit is applied correctly.
 
