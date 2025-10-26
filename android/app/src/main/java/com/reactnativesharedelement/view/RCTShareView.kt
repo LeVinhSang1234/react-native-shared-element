@@ -19,23 +19,22 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.PixelCopy
 import android.app.Activity
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import com.reactnativesharedelement.view.helpers.*
 
-class RCTShareView : FrameLayout {
+class RCTShareView : FrameLayout, ShareViewContainerProvider {
     private val pausedPlayers = mutableListOf<ExoPlayer>()
     private var snapshotView: ImageView? = null
     private var frozen = false
 
     var isDealloc = false
-    var shareTagElement: String? = null
-        set(value) {
-            if (field == value) return
-            field = value
-        }
+    private var shareTagElement: String? = null
+    private var otherView: RCTShareView? = null
+    private var isSharing = false
+    private var overlay: RCTShareViewOverlay? = null
 
     var sharingAnimatedDuration: Double? = null
     val viewContainer: ReactViewGroup =
@@ -60,10 +59,26 @@ class RCTShareView : FrameLayout {
         configure()
     }
 
+    override fun getShareViewContainer(): ViewGroup {
+        return viewContainer
+    }
+
     // ===== Init =====
     private fun configure() {
         clipChildren = true
         addView(viewContainer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+    }
+
+    fun setShareTagElement(tag: String?) {
+        val newTag = tag?.trim()?.takeIf { it.isNotEmpty() }
+        val oldTag = shareTagElement
+        if (oldTag != null && oldTag != newTag) {
+            RCTShareViewTag.removeView(this, oldTag)
+        }
+        shareTagElement = newTag
+        if (newTag != null) {
+            RCTShareViewTag.registerView(this, newTag)
+        }
     }
 
     // ===================== FREEZE / UNFREEZE =====================
@@ -170,32 +185,110 @@ class RCTShareView : FrameLayout {
     }
     // ===================== LIFECYCLE / SHARED ELEMENT =====================
 
+    // ===== Lifecycle =====
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (shareTagElement != null && !isSharing) shareElement() else alpha = 1f
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        android.util.Log.d("RCTShareView", "onDetachedFromWindow")
+    }
+
+
     fun initialize() {}
 
-    @RequiresApi(Build.VERSION_CODES.P)
     fun prepareForRecycle() {
-        performBackSharedElementIfPossible()
+        revertShareElement()
     }
 
     fun dealloc() {
         isDealloc = true
-        cleanup()
+        RCTShareViewTag.removeView(this, shareTagElement)
+        if(!isSharing) prepareForRecycle()
     }
 
     private fun cleanup() {
         pausedPlayers.clear()
+        snapshotView?.let {
+            it.setImageDrawable(null)
+            it.setImageBitmap(null)
+            removeView(it)
+        }
         snapshotView = null
         frozen = false
+        overlay?.didUnmount()
+        overlay = null
+        viewContainer.removeAllViews()
     }
 
     // ===================== SHARED ELEMENT PLACEHOLDER =====================
-
-    @RequiresApi(Build.VERSION_CODES.P)
-    private fun performBackSharedElementIfPossible() {
+    private fun revertShareElement() {
+        val other = otherView ?: run { cleanup(); return }
+        if (other.isDealloc) {
+            cleanup();
+            return;
+        }
+        isSharing = true
+        other.isSharing = true
+        val duration = (sharingAnimatedDuration ?: 300.0).toLong()
+        val ov = other.overlay ?: RCTShareViewOverlay(other.context).also { other.overlay = it }
+        other.post {
+            val fromRect = rectForShare(this)
+            val toRect = other.rectForShare(other)
+            ov.moveToOverlay(
+                fromFrame = fromRect,
+                toFrame = toRect,
+                fromView = this,
+                toView = other,
+                duration = duration,
+                onTarget = {
+                    other.alpha = 1f;
+                },
+                onCompleted = {
+                    cleanup()
+                    other.isSharing = false
+                }
+            )
+        }
     }
 
-    @RequiresApi(Build.VERSION_CODES.P)
-    private fun startSharedElementTransition() {
+    private fun shareElement() {
+        val other = RCTShareViewTag.getOtherViewForTag(this, shareTagElement)
+        if (other == null || other.isDealloc) {
+            alpha = 1.0f
+            return
+        }
+        other.isSharing = true
+        otherView = other
+        isSharing = true
+        post {
+            postDelayed({
+                val ov = overlay ?: RCTShareViewOverlay(context).also { overlay = it }
+                val fromRect = rectForShare(other)
+                val toRect = rectForShare(this)
+
+                val duration = (sharingAnimatedDuration ?: 300.0).toLong()
+                ov.moveToOverlay(
+                    fromFrame = fromRect,
+                    toFrame = toRect,
+                    fromView = other,
+                    toView = this,
+                    duration = duration,
+                    onTarget = {
+                        other.alpha = 1f;
+                        alpha = 1f;
+                    },
+                    onCompleted = {
+                        overlay?.didUnmount()
+                        overlay = null
+                        isSharing = false
+                        other.isSharing = false
+                    }
+                )
+            }, 1)
+        }
     }
     // ===================== HELPERS =====================
 

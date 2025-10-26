@@ -65,7 +65,7 @@ using namespace facebook::react;
   if ([commandName isEqualToString:@"initialize"]) {
     [self initialize];
   } else if ([commandName isEqualToString:@"prepareForRecycle"]) {
-    [self prepareForRecycle];
+    [self backShareElement];
   } else if ([commandName isEqualToString:@"freeze"]) {
     [self freeze];
   } else if ([commandName isEqualToString:@"unfreeze"]) {
@@ -80,8 +80,8 @@ using namespace facebook::react;
     _viewContainer = [[RCTShareViewContainer alloc] init];
     self.pausedPlayers = [NSPointerArray weakObjectsPointerArray];
     [self addSubview:_viewContainer];
+    self.hidden = YES;
   }
-  
   // Thêm lắng nghe sự kiện lắng nghe trên navigaiton
   [UIViewController rn_swizzleBackLifeIfNeeded];
   [UINavigationController rn_enablePopHookOnce];
@@ -89,14 +89,19 @@ using namespace facebook::react;
   return self;
 }
 
+- (void)initialize {
+  _isPrepareForRecycle = NO;
+  if(!_shareTagElement) {
+    self.hidden = NO;
+  } else [self shareElement];
+}
 
 - (void)prepareForRecycle {
   [super prepareForRecycle];
+  [self willUnmount];
   if(!_isSharing) {
-    // [self _returnPlayerToOtherIfNeeded];
     [self unmount];
   };
-  [self willUnmount];
 }
 
 - (void)willUnmount {
@@ -127,23 +132,14 @@ using namespace facebook::react;
   }
 }
 
-- (void)initialize {
-  _isPrepareForRecycle = NO;
-  if(!_shareTagElement) {
-    self.hidden = NO;
-  } else {
-    
-  }
-}
-
 - (void)freeze {
   if (self.frozen) return;
   self.frozen = YES;
   
   [self pausedVideoLayersIn:self];
-    
+  
   UIGraphicsBeginImageContextWithOptions(self.bounds.size, NO, [UIScreen mainScreen].scale);
-
+  
   [self drawViewHierarchyInRect:self.bounds afterScreenUpdates:NO];
   UIImage *snapshotImage = UIGraphicsGetImageFromCurrentImageContext();
   UIGraphicsEndImageContext();
@@ -156,8 +152,6 @@ using namespace facebook::react;
   self.layer.speed = 0.0;
   [self addSubview:snapshotView];
   self.snapshotView = snapshotView;
-  
-  // 6️⃣ Flush transaction → GPU commit
   [CATransaction flush];
 }
 
@@ -193,7 +187,6 @@ using namespace facebook::react;
 
 - (void)resumeVideoLayersIn {
   for (NSUInteger i = 0; i < self.pausedPlayers.count; i++) {
-    // ✅ Ép kiểu an toàn từ void* sang AVPlayer*
     AVPlayer *player = (__bridge AVPlayer *)[self.pausedPlayers pointerAtIndex:i];
     
     if (player) {
@@ -217,7 +210,8 @@ using namespace facebook::react;
     _shareTagElement = newTag;
     [self tryRegisterRouteIfNeeded];
   }
-  
+  [_shareViewOverlay applySharingAnimatedDuration:p.sharingAnimatedDuration];
+
   [super updateProps:props oldProps:oldProps];
 }
 
@@ -290,32 +284,33 @@ using namespace facebook::react;
 #pragma mark - Navigation events
 
 - (void)rn_onEarlyPopFromNav {
-  if(_isSharing || _backGestureActive) return;
-  // [self backShareElement];
+  if(_isSharing || _backGestureActive || _otherView.window == self.window) return;
+  [self backShareElement];
 }
 
 - (void)_onWillPopNoti:(NSNotification *)note {
 }
 
 - (void)handleWillPop {
-  if(_isSharing || _backGestureActive) return;
-  // [self backShareElement];
+  if(_isSharing || _backGestureActive || _otherView.window == self.window) return;
+  [self backShareElement];
 }
 
 - (void)handleDidPop {
   [[RNEarlyRegistry shared] removeView:self];
   [self willUnmount];
-  [self unmount];
+  if(!_isSharing) {
+    [self unmount];
+  }
 }
 
-- (void)handleWillAppear:(BOOL)animated {}
+- (void)handleWillAppear:(BOOL)animated {
+  _isFocused = YES;
+}
 
 - (void)handleWillDisappear:(BOOL)animated {}
 
-- (void)handleDidAppear:(BOOL)animated {
-  if (_isFocused) return;
-  _isFocused = YES;
-  
+- (void)handleDidAppear:(BOOL)animated {  
   UIGestureRecognizer *g = self.nav.interactivePopGestureRecognizer;
   if (g && !self.hasGestureTarget) {
     [g addTarget:self action:@selector(_handlePopGesture:)];
@@ -373,12 +368,21 @@ using namespace facebook::react;
 #pragma mark - ShareElement
 
 - (void)shareElement {
+  _otherView = [RCTShareViewRouteRegistry resolveViewForTag:_shareTagElement exclude:self];
+  
   if(_otherView) {
     __weak __typeof__(self) wSelf = self;
     dispatch_async(dispatch_get_main_queue(), ^{
       [wSelf sharedTransitionFrom:wSelf.otherView to:wSelf isBack:NO];
     });
   } else self.hidden = NO;
+}
+
+
+- (void)backShareElement {
+  if (!_otherView || _otherView.otherView) {
+    return;
+  } else [self sharedTransitionFrom:self to:_otherView isBack:YES];
 }
 
 
@@ -409,15 +413,23 @@ using namespace facebook::react;
   if(dur > 0) [toView.shareViewOverlay applySharingAnimatedDuration:dur * 1000.0];
   
   [toView.shareViewOverlay moveToOverlay:fromFrame
-                              tagetFrame:toFrame
-                                willMove:^ {
+                             targetFrame:toFrame
+                                fromView:fromView
+                                  toView:toView willMove:^ {
     fromView.hidden = YES;
     toView.hidden = YES;
   }
-                                onTarget:^{
+                                onTarget:^ {
     toView.hidden = NO;
-  } onCompleted:^{
+  }
+                             onCompleted:^{
+    fromView.isSharing = NO;
+    toView.isSharing = NO;
+    
     if(isBack) [toView unmount];
+    else fromView.hidden = NO;
   }];
 }
+
 @end
+

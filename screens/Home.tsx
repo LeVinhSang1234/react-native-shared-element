@@ -1,8 +1,8 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import ShareView, { ShareViewRef } from '../packages/ShareView';
-import Video from '../packages/Video';
 import { useRef } from 'react';
+import Video, { getMemory } from '../packages/Video';
 
 export default function Home() {
   const navigation = useNavigation();
@@ -22,28 +22,24 @@ export default function Home() {
       style={styles.flex}
       contentContainerStyle={{ paddingBottom: 100 }}
     >
-      <ShareView ref={refView}>
-        <View style={{ opacity: 1 }}>
-          <Video
-            style={styles.root}
-            source={{
-              uri: 'https://res.cloudinary.com/dn2lgibpf/video/upload/v1760553824/uploads_besties/1760553776667Z2gawA4AW35j.mp4',
-            }}
-            loop
-            sharingAnimatedDuration={300}
-            onError={e => console.log(e.nativeEvent)}
-            posterResizeMode="contain"
-            muted
-          />
-          <View style={{ opacity: 1 }}>
-            <Text style={{ color: 'red' }}>Color red</Text>
-            <Text style={{ color: 'red' }}>Color red</Text>
-            <Text style={{ color: 'red' }}>Color red</Text>
-            <Text style={{ color: 'red' }}>Color red</Text>
-            <Text style={{ color: 'red' }}>Color red</Text>
-            <Text style={{ color: 'red' }}>Color red</Text>
-          </View>
-        </View>
+      <ShareView ref={refView} shareTagElement="ShareView">
+        <Video
+          shareTagElement={'Hello'}
+          style={styles.root}
+          poster={{ uri: 'https://picsum.photos/300/200' }}
+          source={{
+            uri: 'https://res.cloudinary.com/dn2lgibpf/video/upload/v1760553824/uploads_besties/1760553776667Z2gawA4AW35j.mp4',
+          }}
+          sharingAnimatedDuration={300}
+        />
+        <Image
+          source={require('./test.png')}
+          style={styles.image}
+          resizeMode="cover"
+        />
+        <Text>Goto Detail</Text>
+        <Text>Goto Detail</Text>
+        <Text>Goto Detail</Text>
       </ShareView>
 
       <Pressable onPress={freeze}>
@@ -55,6 +51,9 @@ export default function Home() {
       <Pressable onPress={() => navigation.navigate('Detail')}>
         <Text>Goto Detail</Text>
       </Pressable>
+      <Pressable onPress={() => getMemory().then(console.log)}>
+        <Text>MEmmeee</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -65,4 +64,5 @@ const styles = StyleSheet.create({
     height: 400,
     width: '100%',
   },
+  image: { width: '100%', height: 200 },
 });

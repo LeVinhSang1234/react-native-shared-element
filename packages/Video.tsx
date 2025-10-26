@@ -137,6 +137,10 @@ export async function getThumbnailVideo(url: string, timeSec: number) {
   return base64;
 }
 
+export async function getMemory() {
+  return NativeVideoThumbnail.getMemory();
+}
+
 Video.displayName = 'Video';
 
 export default memo(Video);

@@ -15,10 +15,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)applySharingAnimatedDuration:(double)sharingAnimatedDuration;
 
 - (void)moveToOverlay:(CGRect)fromFrame
-           tagetFrame:(CGRect)toFrame
-             willMove:(void (^)(void))willMove
-             onTarget:(void (^)(void))onTarget
-          onCompleted:(void (^)(void))onCompleted;
+          targetFrame:(CGRect)toFrame
+             fromView:(UIView *)fromView
+               toView:(UIView *)toView
+             willMove:(nonnull void (^)(void))willMove
+             onTarget:(nonnull void (^)(void))onTarget
+          onCompleted:(nonnull void (^)(void))onCompleted;
 
 - (void)unmount;
 

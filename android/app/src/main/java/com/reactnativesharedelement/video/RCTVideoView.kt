@@ -518,7 +518,6 @@ class RCTVideoView : FrameLayout {
         if (newTag != null) {
             RCTVideoTag.registerView(this, newTag)
         }
-
     }
 
     fun initializePlayerFromCurrentProps() {

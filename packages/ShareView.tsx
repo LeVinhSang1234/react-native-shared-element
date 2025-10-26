@@ -5,8 +5,9 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  useState,
 } from 'react';
-import type { View } from 'react-native';
+import { LayoutChangeEvent, Platform, View } from 'react-native';
 import type { Ref } from 'react';
 
 import type { ShareViewNativeProps } from '../natives/ShareViewNativeComponent';
@@ -24,8 +25,10 @@ export interface ShareViewRef extends View {
 }
 
 const ShareView = forwardRef<ShareViewRef, ShareViewProps>(
-  (props, ref: Ref<ShareViewRef>) => {
+  ({ children, onLayout, ...props }, ref: Ref<ShareViewRef>) => {
     const nativeRef = useRef<TNativeRef>(null);
+    const [freeze, setFreeze] = useState(false);
+    const refSize = useRef({ width: 0, height: 0 });
 
     const prepareForRecycle = useCallback(async () => {
       return new Promise(res => {
@@ -45,12 +48,16 @@ const ShareView = forwardRef<ShareViewRef, ShareViewProps>(
           freeze: function () {
             if (nativeRef.current) {
               Commands.freeze(nativeRef.current);
+              if (Platform.OS !== 'android') setFreeze(true);
             }
           },
           unfreeze: function () {
-            if (nativeRef.current) {
-              Commands.unfreeze(nativeRef.current);
-            }
+            setFreeze(false);
+            setTimeout(() => {
+              if (nativeRef.current) {
+                Commands.unfreeze(nativeRef.current);
+              }
+            }, 0);
           },
         } as ShareViewRef;
       },
@@ -61,7 +68,19 @@ const ShareView = forwardRef<ShareViewRef, ShareViewProps>(
       if (nativeRef.current) Commands.initialize(nativeRef.current);
     }, []);
 
-    return <ShareViewNativeComponent {...props} ref={nativeRef} />;
+    const _onLayout = (e: LayoutChangeEvent) => {
+      onLayout?.(e);
+      refSize.current = {
+        width: e.nativeEvent.layout.width,
+        height: e.nativeEvent.layout.height,
+      };
+    };
+
+    return (
+      <ShareViewNativeComponent {...props} onLayout={_onLayout} ref={nativeRef}>
+        {freeze ? <View style={refSize.current} /> : children}
+      </ShareViewNativeComponent>
+    );
   },
 );
 

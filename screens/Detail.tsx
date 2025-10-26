@@ -1,10 +1,15 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import Video from '../packages/Video';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import ShareView, { ShareViewRef } from '../packages/ShareView';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Detail() {
   const [copy, setCopy] = useState(false);
   const [removeTag, setRemoveTag] = useState(false);
+  const navigation = useNavigation();
+
+  const refView = useRef<ShareViewRef>(null);
 
   return (
     <View>
@@ -13,28 +18,28 @@ export default function Detail() {
         style={styles.root}
         poster={{ uri: 'https://picsum.photos/300/200' }}
         source={{
-          uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          uri: 'https://res.cloudinary.com/dn2lgibpf/video/upload/v1760553824/uploads_besties/1760553776667Z2gawA4AW35j.mp4',
         }}
         sharingAnimatedDuration={300}
       />
-      {/* {copy ? (
-        <Video
-          shareTagElement={removeTag ? undefined : 'Hello'}
-          style={styles.root}
-          poster={{ uri: 'https://picsum.photos/300/200' }}
-          source={{
-            uri: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-          }}
-          sharingAnimatedDuration={500}
+      <ShareView shareTagElement="ShareView" ref={refView}>
+        <Image
+          source={require('./test.png')}
+          style={styles.image}
+          resizeMode="cover"
         />
-      ) : null} */}
+      </ShareView>
 
       <TouchableOpacity onPress={() => setCopy(!copy)}>
         <Text>Toggle Copy Video</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => setRemoveTag(!removeTag)}>
-        <Text>{removeTag ? 'Add ShareTag' : 'Remove ShareTag'}</Text>
+      <TouchableOpacity
+        onPress={async () => {
+          navigation.goBack();
+        }}
+      >
+        <Text>Back</Text>
       </TouchableOpacity>
     </View>
   );
@@ -42,7 +47,8 @@ export default function Detail() {
 
 const styles = StyleSheet.create({
   root: {
-    width: '80%',
+    width: '100%',
     height: 300,
   },
+  image: { width: '100%', height: 400 },
 });

@@ -27,7 +27,11 @@ class RCTShareViewManager : ViewGroupManager<RCTShareView>() {
     }
 
     override fun removeViewAt(parent: RCTShareView, index: Int) {
-        parent.viewContainer.removeViewAt(index)
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if(!parent.isDealloc) {
+                parent.viewContainer.removeViewAt(index)
+            }
+        }, 0)
     }
 
     override fun getChildCount(parent: RCTShareView): Int {
@@ -41,7 +45,7 @@ class RCTShareViewManager : ViewGroupManager<RCTShareView>() {
     // ========= Props =========
     @ReactProp(name = "shareTagElement")
     fun setShareTagElement(view: RCTShareView, value: String?) {
-        view.shareTagElement = value
+        view.setShareTagElement(value)
     }
 
     @ReactProp(name = "sharingAnimatedDuration")
