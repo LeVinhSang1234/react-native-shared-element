@@ -22,7 +22,7 @@ A custom React Native component for shared element transitions, supporting both 
 
 ## Source
 
-GitHub: [https://github.com/LeVinhSang1234/React-Native-Shared-Element/tree/share-element](https://github.com/LeVinhSang1234/React-Native-Shared-Element/tree/share-element)
+GitHub: [https://github.com/LeVinhSang1234/react-native-shared-element](https://github.com/LeVinhSang1234/react-native-shared-element)
 
 ---
 
@@ -86,7 +86,7 @@ Native code is autolinked. No extra steps needed.
 If you are using React Navigation please add the following command to your app's `package.json`:
 
 ```json
-"postinstall": "if [ -d ./node_modules/@react-navigation/core/lib/module ] && [ -d ./node_modules/@rn-slv/react-native-shared-element ]; then cp ./node_modules/@rn-slv/react-native-shared-element/packages/auto-navigation.txt ./node_modules/@react-navigation/core/lib/module/useNavigation.js fi"
+"postinstall": "if [ -d ./node_modules/@react-navigation/core/lib/module ] && [ -d ./node_modules/@rn-slv/react-native-shared-element ]; then cp ./node_modules/@rn-slv/react-native-shared-element/packages/auto-navigation.txt ./node_modules/@react-navigation/core/lib/module/useNavigation.js; fi"
 ```
 
 This ensures the navigation patch is always applied after installing dependencies.
@@ -97,7 +97,7 @@ This ensures the navigation patch is always applied after installing dependencie
 
 # Shared Video
 
-You can change the video cache size limit by calling the function `setCacheMaxSize(size: number)` (unit: MB), imported from the package. The default is 300MB.
+You can change the video cache size limit by calling the function `setCacheMaxSize(size: number)` (unit: MB), imported from the package. The default is 5000MB (5GB).
 
 **Tip:** Call `setCacheMaxSize` as early as possible in your app (ideally before any video is loaded) to ensure the cache limit is applied correctly.
 
