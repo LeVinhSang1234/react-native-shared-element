@@ -213,6 +213,13 @@ class RCTVideoView : FrameLayout {
                 }
 
                 override fun onPlaybackStateChanged(state: Int) {
+                    if (!p.playWhenReady) {
+                        tickers.stopProgress()
+                        tickers.stopOnLoad()
+                        tickers.stopOnMemoryDebug()
+                        updateKeepScreenOn()
+                        return
+                    }
                     when (state) {
                         Player.STATE_BUFFERING -> maybeDispatchBuffering(true)
                         Player.STATE_READY -> {
@@ -889,7 +896,10 @@ class RCTVideoView : FrameLayout {
     // ===== Share Element (Android version swap iOS) =====
     private fun shareElement() {
         val other = RCTVideoTag.getOtherViewForTag(this, shareTagElement)
-        if (other == null || other.isDealloc) return
+        if (other == null || other.isDealloc) {
+            alpha = 1.0f
+            return
+        }
         otherViewSameWindow = other.parent === parent
         otherView = other
         post {

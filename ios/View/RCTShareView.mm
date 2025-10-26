@@ -25,8 +25,12 @@
 using namespace facebook::react;
 
 @interface RCTShareView ()
+@property (nonatomic, assign) BOOL frozen;
+@property (nonatomic, strong) UIView *snapshotView;
+
 @property (nonatomic, assign) BOOL isPrepareForRecycle;
-@property (nonatomic, strong) RCTShareViewContainer *videoContainer;
+@property (nonatomic, strong) RCTShareViewContainer *viewContainer;
+@property (nonatomic, strong) NSPointerArray *pausedPlayers;
 
 // support navigation
 @property (nonatomic, weak) UINavigationController *nav;
@@ -59,6 +63,13 @@ using namespace facebook::react;
 
 - (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args {
   if ([commandName isEqualToString:@"initialize"]) {
+    [self initialize];
+  } else if ([commandName isEqualToString:@"prepareForRecycle"]) {
+    [self prepareForRecycle];
+  } else if ([commandName isEqualToString:@"freeze"]) {
+    [self freeze];
+  } else if ([commandName isEqualToString:@"unfreeze"]) {
+    [self unfreeze];
   }
 }
 
@@ -66,8 +77,9 @@ using namespace facebook::react;
   if(self = [super init]) {
     _shareViewOverlay = [[RCTShareViewOverlay alloc] init];
     
-    _videoContainer = [[RCTShareViewContainer alloc] init];
-    [self addSubview:_videoContainer];
+    _viewContainer = [[RCTShareViewContainer alloc] init];
+    self.pausedPlayers = [NSPointerArray weakObjectsPointerArray];
+    [self addSubview:_viewContainer];
   }
   
   // Thêm lắng nghe sự kiện lắng nghe trên navigaiton
@@ -124,6 +136,76 @@ using namespace facebook::react;
   }
 }
 
+- (void)freeze {
+  if (self.frozen) return;
+  self.frozen = YES;
+  
+  [self pausedVideoLayersIn:self];
+    
+  UIGraphicsBeginImageContextWithOptions(self.bounds.size, NO, [UIScreen mainScreen].scale);
+
+  [self drawViewHierarchyInRect:self.bounds afterScreenUpdates:NO];
+  UIImage *snapshotImage = UIGraphicsGetImageFromCurrentImageContext();
+  UIGraphicsEndImageContext();
+  
+  UIImageView *snapshotView = [[UIImageView alloc] initWithImage:snapshotImage];
+  snapshotView.frame = self.bounds;
+  snapshotView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+  
+  _viewContainer.hidden = YES;
+  self.layer.speed = 0.0;
+  [self addSubview:snapshotView];
+  self.snapshotView = snapshotView;
+  
+  // 6️⃣ Flush transaction → GPU commit
+  [CATransaction flush];
+}
+
+- (void)unfreeze
+{
+  if (!self.frozen) return;
+  
+  if (self.snapshotView) {
+    [self.snapshotView removeFromSuperview];
+    self.snapshotView = nil;
+  }
+  _viewContainer.hidden = NO;
+  self.layer.speed = 1.0;
+  [self resumeVideoLayersIn];
+  
+  self.frozen = NO;
+}
+
+- (void)pausedVideoLayersIn:(UIView *)root {
+  for (UIView *sub in root.subviews) {
+    for (CALayer *layer in sub.layer.sublayers) {
+      if ([layer isKindOfClass:[AVPlayerLayer class]]) {
+        AVPlayer *player = ((AVPlayerLayer *)layer).player;
+        if (player && player.rate > 0.01) {
+          [player pause];
+          [self.pausedPlayers addPointer:(__bridge void * _Nullable)(player)];
+        }
+      }
+    }
+    [self pausedVideoLayersIn:sub];
+  }
+}
+
+- (void)resumeVideoLayersIn {
+  for (NSUInteger i = 0; i < self.pausedPlayers.count; i++) {
+    // ✅ Ép kiểu an toàn từ void* sang AVPlayer*
+    AVPlayer *player = (__bridge AVPlayer *)[self.pausedPlayers pointerAtIndex:i];
+    
+    if (player) {
+      @try {
+        [player play];
+      } @catch (NSException *e) {
+      }
+    }
+  }
+  [self.pausedPlayers compact];
+}
+
 #pragma mark - React props / events
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps {
@@ -143,7 +225,7 @@ using namespace facebook::react;
 
 - (void)mountChildComponentView:(UIView<RCTComponentViewProtocol> *)childView
                           index:(NSInteger)index {
-  [_videoContainer insertSubview:childView atIndex:index];
+  [_viewContainer insertSubview:childView atIndex:index];
 }
 
 - (void)unmountChildComponentView:(UIView<RCTComponentViewProtocol> *)childView

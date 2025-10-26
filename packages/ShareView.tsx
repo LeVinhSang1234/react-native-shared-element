@@ -19,6 +19,8 @@ export interface ShareViewProps extends ShareViewNativeProps {}
 
 export interface ShareViewRef extends View {
   prepareForRecycle: () => Promise<void>;
+  freeze: () => void;
+  unfreeze: () => void;
 }
 
 const ShareView = forwardRef<ShareViewRef, ShareViewProps>(
@@ -40,6 +42,16 @@ const ShareView = forwardRef<ShareViewRef, ShareViewProps>(
         return {
           ...(nativeRef.current as unknown as View),
           prepareForRecycle,
+          freeze: function () {
+            if (nativeRef.current) {
+              Commands.freeze(nativeRef.current);
+            }
+          },
+          unfreeze: function () {
+            if (nativeRef.current) {
+              Commands.unfreeze(nativeRef.current);
+            }
+          },
         } as ShareViewRef;
       },
       [prepareForRecycle],
