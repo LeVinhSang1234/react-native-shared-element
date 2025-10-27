@@ -1,4 +1,3 @@
-import ShareView from './packages/ShareView';
 import Video, {
   setCacheMaxSize,
   getThumbnailVideo,
@@ -14,6 +13,5 @@ export type {
   OnProgressData,
   BufferConfig,
 } from './natives/VideoNativeComponent';
-export type { ShareViewProps, ShareViewRef } from './packages/ShareView';
 
-export { Video, ShareView, setCacheMaxSize, getThumbnailVideo, getMemory };
+export { Video, setCacheMaxSize, getThumbnailVideo, getMemory };

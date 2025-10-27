@@ -1,21 +1,9 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ShareViewRef } from '../packages/ShareView';
-import { useRef } from 'react';
 import Video, { getMemory } from '../packages/Video';
 
 export default function Home() {
   const navigation = useNavigation();
-
-  const refView = useRef<ShareViewRef>(null);
-
-  const freeze = () => {
-    refView.current?.freeze();
-  };
-
-  const unfreeze = () => {
-    refView.current?.unfreeze();
-  };
 
   return (
     <ScrollView
@@ -32,13 +20,6 @@ export default function Home() {
         loop
         sharingAnimatedDuration={300}
       />
-
-      <Pressable onPress={freeze}>
-        <Text>Freeze</Text>
-      </Pressable>
-      <Pressable onPress={unfreeze}>
-        <Text>Unfreeze</Text>
-      </Pressable>
       <Pressable onPress={() => navigation.navigate('Detail')}>
         <Text>Goto Detail</Text>
       </Pressable>

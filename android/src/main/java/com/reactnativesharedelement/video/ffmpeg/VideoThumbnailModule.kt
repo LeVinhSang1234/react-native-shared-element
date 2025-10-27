@@ -9,10 +9,16 @@ import com.facebook.react.module.annotations.ReactModule
 import kotlinx.coroutines.*
 import java.io.ByteArrayOutputStream
 import com.reactnativesharedelement.NativeVideoThumbnailSpec
+import android.app.ActivityManager
+import android.content.Context
+import android.os.Debug
+import android.util.Log
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
 
 @ReactModule(name = VideoThumbnailModule.NAME)
-class VideoThumbnailModule(private val reactContext: ReactApplicationContext)
-    : NativeVideoThumbnailSpec(reactContext) {
+class VideoThumbnailModule(private val reactContext: ReactApplicationContext) :
+    NativeVideoThumbnailSpec(reactContext) {
 
     companion object {
         const val NAME = "VideoThumbnail"
@@ -37,8 +43,7 @@ class VideoThumbnailModule(private val reactContext: ReactApplicationContext)
                     return@launch
                 }
 
-                // ⚙️ Scale nhỏ lại để tiết kiệm RAM và tăng tốc encode
-                val targetWidth = 160  // bạn có thể chỉnh 120–240 tùy thanh preview
+                val targetWidth = 160
                 val scaled = Bitmap.createScaledBitmap(
                     frame,
                     targetWidth,
@@ -47,7 +52,6 @@ class VideoThumbnailModule(private val reactContext: ReactApplicationContext)
                 )
                 frame.recycle()
 
-                // 🧠 Nén JPEG ở chất lượng thấp hơn cho tốc độ nhanh
                 val output = ByteArrayOutputStream()
                 scaled.compress(Bitmap.CompressFormat.JPEG, 70, output)
                 val base64 = Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
@@ -55,12 +59,48 @@ class VideoThumbnailModule(private val reactContext: ReactApplicationContext)
                 scaled.recycle()
                 retriever.release()
 
-                // ✅ Trả về data URI sẵn sàng hiển thị bên React Native
                 promise.resolve("data:image/jpeg;base64,$base64")
             } catch (e: Exception) {
-                try { retriever.release() } catch (_: Throwable) {}
+                try {
+                    retriever.release()
+                } catch (_: Throwable) {
+                }
                 promise.reject("THUMBNAIL_ERROR", e.message, e)
             }
+        }
+    }
+
+    override fun getMemory(promise: Promise) {
+        try {
+            val activityManager =
+                reactContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val info = ActivityManager.MemoryInfo()
+            activityManager.getMemoryInfo(info)
+
+            val totalMB = info.totalMem / (1024 * 1024)
+            val availMB = info.availMem / (1024 * 1024)
+            val usedMB = totalMB - availMB
+            val percentUsed = (usedMB.toDouble() / totalMB * 100).toInt()
+
+            val memInfo = Debug.MemoryInfo()
+            Debug.getMemoryInfo(memInfo)
+            val totalPss = memInfo.totalPss / 1024
+            val nativePss = memInfo.nativePss / 1024
+            val dalvikPss = memInfo.dalvikPss / 1024
+            val otherPss = memInfo.otherPss / 1024
+
+            val message = """
+        💾 Memory usage:
+        ▪ Total RAM:  ${totalMB}MB
+        ▪ Used RAM:   ${usedMB}MB (${percentUsed}%)
+        ▪ Native:     ${nativePss}MB
+        ▪ Dalvik:     ${dalvikPss}MB
+        ▪ Other:      ${otherPss}MB
+        ▪ PSS Total:  ${totalPss}MB
+      """.trimIndent()
+            promise.resolve(message)
+        } catch (e: Exception) {
+            promise.reject("ERR_MEMORY", e)
         }
     }
 }

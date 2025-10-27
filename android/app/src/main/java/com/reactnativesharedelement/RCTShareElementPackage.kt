@@ -5,7 +5,6 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ViewManager
 import com.reactnativesharedelement.video.RCTVideoViewManager
-import com.reactnativesharedelement.view.RCTShareViewManager
 import com.reactnativesharedelement.video.ffmpeg.VideoThumbnailModule
 
 class RCTShareElementPackage : ReactPackage {
@@ -14,5 +13,5 @@ class RCTShareElementPackage : ReactPackage {
         ): List<NativeModule> = listOf(VideoThumbnailModule(reactContext))
         override fun createViewManagers(
                 reactContext: ReactApplicationContext
-        ): List<ViewManager<*, *>> = listOf(RCTVideoViewManager(), RCTShareViewManager())
+        ): List<ViewManager<*, *>> = listOf(RCTVideoViewManager())
 }

@@ -2648,7 +2648,7 @@ SPEC CHECKSUMS:
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   hermes-engine: 35c763d57c9832d0eef764316ca1c4d043581394
   KTVHTTPCache: a1f3c9c217be5af6985b240d660db262a0cbc18a
-  RCT-Folly: 59ec0ac1f2f39672a0c6e6cecdd39383b764646f
+  RCT-Folly: 846fda9475e61ec7bcbf8a3fe81edfcaeb090669
   RCTDeprecation: c0ed3249a97243002615517dff789bf4666cf585
   RCTRequired: 58719f5124f9267b5f9649c08bf23d9aea845b23
   RCTTypeSafety: 4aefa8328ab1f86da273f08517f1f6b343f6c2cc
@@ -2710,7 +2710,7 @@ SPEC CHECKSUMS:
   React-timing: 1e6a8acb66e2b7ac9d418956617fd1fdb19322fd
   React-utils: 52bbb03f130319ef82e4c3bc7a85eaacdb1fec87
   ReactAppDependencyProvider: 433ddfb4536948630aadd5bd925aff8a632d2fe3
-  ReactCodegen: cc607ed82f1b2708a0118e9c6ccbaebb3a2a31a6
+  ReactCodegen: 3e5acd9735d7a7ed55f60385d2f21b1043b4fef1
   ReactCommon: 394c6b92765cf6d211c2c3f7f6bc601dffb316a6
   RNScreens: 0bbf16c074ae6bb1058a7bf2d1ae017f4306797c
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748

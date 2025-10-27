@@ -10,7 +10,11 @@ import {
   useMemo,
   useRef,
 } from 'react';
-import { StyleSheet, type MeasureOnSuccessCallback } from 'react-native';
+import {
+  Platform,
+  StyleSheet,
+  type MeasureOnSuccessCallback,
+} from 'react-native';
 import { preloadVideoSource } from './utils';
 import NativeVideoThumbnail from '../natives/NativeVideoThumbnail';
 
@@ -138,6 +142,7 @@ export async function getThumbnailVideo(url: string, timeSec: number) {
 }
 
 export async function getMemory() {
+  if (Platform.OS !== 'android') return;
   return NativeVideoThumbnail.getMemory();
 }
 

@@ -100,6 +100,7 @@ using namespace facebook::react;
     __weak __typeof__(self) wSelf = self;
     _videoManager.onPlayerReady = ^() {
       [wSelf applyFullscreen:wSelf.isFullscreen];
+      [wSelf showPosterNeeded];
     };
      _videoManager.onUpdateLayout = ^() {
       [wSelf addPlayerLayerIfNeeded];

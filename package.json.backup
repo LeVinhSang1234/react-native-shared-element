@@ -42,8 +42,7 @@
     },
     "ios": {
       "componentProvider": {
-        "Video": "RCTVideoView",
-        "ShareView": "RCTShareView"
+        "Video": "RCTVideoView"
       }
     }
   }
