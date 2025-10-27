@@ -1,15 +1,11 @@
 import { StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import Video from '../packages/Video';
-import { useRef, useState } from 'react';
-import ShareView, { ShareViewRef } from '../packages/ShareView';
+import { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 
 export default function Detail() {
   const [copy, setCopy] = useState(false);
-  const [removeTag, setRemoveTag] = useState(false);
   const navigation = useNavigation();
-
-  const refView = useRef<ShareViewRef>(null);
 
   return (
     <View>
@@ -22,13 +18,11 @@ export default function Detail() {
         }}
         sharingAnimatedDuration={300}
       />
-      <ShareView shareTagElement="ShareView" ref={refView}>
-        <Image
-          source={require('./test.png')}
-          style={styles.image}
-          resizeMode="cover"
-        />
-      </ShareView>
+      <Image
+        source={require('./test.png')}
+        style={styles.image}
+        resizeMode="cover"
+      />
 
       <TouchableOpacity onPress={() => setCopy(!copy)}>
         <Text>Toggle Copy Video</Text>

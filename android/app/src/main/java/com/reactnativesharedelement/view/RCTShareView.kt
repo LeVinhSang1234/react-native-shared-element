@@ -2,74 +2,48 @@ package com.reactnativesharedelement.view
 
 import android.content.Context
 import android.graphics.*
-import android.os.Build
-import android.view.Choreographer
+import android.os.Handler
+import android.os.Looper
+import android.util.AttributeSet
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import androidx.annotation.RequiresApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.facebook.react.bridge.ReactContext
 import com.facebook.react.views.view.ReactViewGroup
-import android.widget.FrameLayout
-import android.util.AttributeSet
-
-import android.graphics.Bitmap
-import android.graphics.Rect
-import android.os.Handler
-import android.os.Looper
-import android.view.PixelCopy
-import android.app.Activity
+import com.reactnativesharedelement.view.helpers.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import com.reactnativesharedelement.view.helpers.*
 
 class RCTShareView : FrameLayout, ShareViewContainerProvider {
     private val pausedPlayers = mutableListOf<ExoPlayer>()
     private var snapshotView: ImageView? = null
     private var frozen = false
-
-    var isDealloc = false
     private var shareTagElement: String? = null
     private var otherView: RCTShareView? = null
-    private var isSharing = false
     private var overlay: RCTShareViewOverlay? = null
 
+    var isDealloc = false
+    var isSharing = false
     var sharingAnimatedDuration: Double? = null
-    val viewContainer: ReactViewGroup =
-        ReactViewGroup(context).apply {
-            clipChildren = true
-        }
+    val viewContainer = ReactViewGroup(context).apply { clipChildren = true }
 
     // ===== Constructors =====
-    constructor(context: Context) : super(context) {
-        configure()
-    }
+    constructor(context: Context) : super(context) { configure() }
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) { configure() }
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int)
+            : super(context, attrs, defStyleAttr) { configure() }
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
-        configure()
-    }
+    override fun getShareViewContainer(): ViewGroup = viewContainer
 
-    constructor(
-        context: Context,
-        attrs: AttributeSet?,
-        defStyleAttr: Int
-    ) : super(context, attrs, defStyleAttr) {
-        configure()
-    }
-
-    override fun getShareViewContainer(): ViewGroup {
-        return viewContainer
-    }
-
-    // ===== Init =====
     private fun configure() {
         clipChildren = true
         addView(viewContainer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
     }
 
-    fun setShareTagElement(tag: String?) {
+     fun setShareTagElement(tag: String?) {
         val newTag = tag?.trim()?.takeIf { it.isNotEmpty() }
         val oldTag = shareTagElement
         if (oldTag != null && oldTag != newTag) {
@@ -81,51 +55,26 @@ class RCTShareView : FrameLayout, ShareViewContainerProvider {
         }
     }
 
-    // ===================== FREEZE / UNFREEZE =====================
+    // ===================== SNAPSHOT =====================
     private fun captureSnapshot(): Bitmap? {
-        val activity = (context as? ReactContext)?.currentActivity ?: return null
-        val w = width
-        val h = height
+        val w = viewContainer.width
+        val h = viewContainer.height
         if (w <= 0 || h <= 0) return null
 
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val location = IntArray(2)
-        getLocationInWindow(location)
-        val rect = Rect(location[0], location[1], location[0] + w, location[1] + h)
-
-        val latch = CountDownLatch(1)
-        val handler = Handler(Looper.getMainLooper())
-
-        var success = false
-        PixelCopy.request(
-            activity.window,
-            rect,
-            bitmap,
-            { result ->
-                success = (result == PixelCopy.SUCCESS)
-                latch.countDown()
-            },
-            handler
-        )
-
-        try {
-            latch.await(200, TimeUnit.MILLISECONDS)
-        } catch (e: InterruptedException) {
-        }
-
-        return if (success) bitmap else null
+        val canvas = Canvas(bitmap)
+        viewContainer.layout(viewContainer.left, viewContainer.top, viewContainer.right, viewContainer.bottom)
+        viewContainer.draw(canvas)
+        return bitmap
     }
 
+    // ===================== FREEZE / UNFREEZE =====================
     fun freeze() {
         if (frozen) return
         frozen = true
         pauseVideoPlayers(this)
 
-        val snapshot = captureSnapshot()
-        if (snapshot == null) {
-            return
-        }
-
+        val snapshot = captureSnapshot() ?: return
         snapshotView = ImageView(context).apply {
             setImageBitmap(snapshot)
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
@@ -160,8 +109,7 @@ class RCTShareView : FrameLayout, ShareViewContainerProvider {
                         player.playWhenReady = false
                         player.stop()
                         pausedPlayers.add(player)
-                    } catch (_: Exception) {
-                    }
+                    } catch (_: Exception) { }
                 }
             }
         } else if (root is ViewGroup) {
@@ -172,20 +120,16 @@ class RCTShareView : FrameLayout, ShareViewContainerProvider {
     }
 
     private fun resumeVideoPlayers() {
-        if (pausedPlayers.isEmpty()) return
-        for ((index, player) in pausedPlayers.withIndex()) {
+        pausedPlayers.forEach {
             try {
-                player.prepare()
-                player.playWhenReady = true
-
-            } catch (e: Exception) {
-            }
+                it.prepare()
+                it.playWhenReady = true
+            } catch (_: Exception) { }
         }
         pausedPlayers.clear()
     }
-    // ===================== LIFECYCLE / SHARED ELEMENT =====================
 
-    // ===== Lifecycle =====
+    // ===================== LIFECYCLE =====================
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         if (shareTagElement != null && !isSharing) shareElement() else alpha = 1f
@@ -196,17 +140,14 @@ class RCTShareView : FrameLayout, ShareViewContainerProvider {
         android.util.Log.d("RCTShareView", "onDetachedFromWindow")
     }
 
-
+    // ===================== SHARED ELEMENT PLACEHOLDER =====================
     fun initialize() {}
-
-    fun prepareForRecycle() {
-        revertShareElement()
-    }
+    fun prepareForRecycle() = revertShareElement()
 
     fun dealloc() {
         isDealloc = true
         RCTShareViewTag.removeView(this, shareTagElement)
-        if(!isSharing) prepareForRecycle()
+        if (!isSharing) prepareForRecycle()
     }
 
     private fun cleanup() {
@@ -220,15 +161,15 @@ class RCTShareView : FrameLayout, ShareViewContainerProvider {
         frozen = false
         overlay?.didUnmount()
         overlay = null
+        isSharing = false
         viewContainer.removeAllViews()
     }
 
-    // ===================== SHARED ELEMENT PLACEHOLDER =====================
     private fun revertShareElement() {
         val other = otherView ?: run { cleanup(); return }
         if (other.isDealloc) {
-            cleanup();
-            return;
+            cleanup()
+            return
         }
         isSharing = true
         other.isSharing = true
@@ -236,16 +177,14 @@ class RCTShareView : FrameLayout, ShareViewContainerProvider {
         val ov = other.overlay ?: RCTShareViewOverlay(other.context).also { other.overlay = it }
         other.post {
             val fromRect = rectForShare(this)
-            val toRect = other.rectForShare(other)
+            val toRect = rectForShare(other)
             ov.moveToOverlay(
                 fromFrame = fromRect,
                 toFrame = toRect,
                 fromView = this,
                 toView = other,
                 duration = duration,
-                onTarget = {
-                    other.alpha = 1f;
-                },
+                onTarget = { other.alpha = 1f },
                 onCompleted = {
                     cleanup()
                     other.isSharing = false
@@ -261,14 +200,13 @@ class RCTShareView : FrameLayout, ShareViewContainerProvider {
             return
         }
         other.isSharing = true
-        otherView = other
         isSharing = true
+        otherView = other
         post {
             postDelayed({
                 val ov = overlay ?: RCTShareViewOverlay(context).also { overlay = it }
                 val fromRect = rectForShare(other)
                 val toRect = rectForShare(this)
-
                 val duration = (sharingAnimatedDuration ?: 300.0).toLong()
                 ov.moveToOverlay(
                     fromFrame = fromRect,
@@ -277,8 +215,8 @@ class RCTShareView : FrameLayout, ShareViewContainerProvider {
                     toView = this,
                     duration = duration,
                     onTarget = {
-                        other.alpha = 1f;
-                        alpha = 1f;
+                        other.alpha = 1f
+                        alpha = 1f
                     },
                     onCompleted = {
                         overlay?.didUnmount()
@@ -290,8 +228,8 @@ class RCTShareView : FrameLayout, ShareViewContainerProvider {
             }, 1)
         }
     }
-    // ===================== HELPERS =====================
 
+    // ===================== HELPERS =====================
     private fun findRoot(): ViewGroup? {
         val act = (context as? ReactContext)?.currentActivity ?: (context as? android.app.Activity)
         return act?.findViewById(android.R.id.content)

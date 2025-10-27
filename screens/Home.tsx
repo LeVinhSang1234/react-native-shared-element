@@ -1,6 +1,6 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import ShareView, { ShareViewRef } from '../packages/ShareView';
+import { ShareViewRef } from '../packages/ShareView';
 import { useRef } from 'react';
 import Video, { getMemory } from '../packages/Video';
 
@@ -22,25 +22,16 @@ export default function Home() {
       style={styles.flex}
       contentContainerStyle={{ paddingBottom: 100 }}
     >
-      <ShareView ref={refView} shareTagElement="ShareView">
-        <Video
-          shareTagElement={'Hello'}
-          style={styles.root}
-          poster={{ uri: 'https://picsum.photos/300/200' }}
-          source={{
-            uri: 'https://res.cloudinary.com/dn2lgibpf/video/upload/v1760553824/uploads_besties/1760553776667Z2gawA4AW35j.mp4',
-          }}
-          sharingAnimatedDuration={300}
-        />
-        <Image
-          source={require('./test.png')}
-          style={styles.image}
-          resizeMode="cover"
-        />
-        <Text>Goto Detail</Text>
-        <Text>Goto Detail</Text>
-        <Text>Goto Detail</Text>
-      </ShareView>
+      <Video
+        shareTagElement={'Hello'}
+        style={styles.root}
+        poster={{ uri: 'https://picsum.photos/300/200' }}
+        source={{
+          uri: 'https://res.cloudinary.com/dn2lgibpf/video/upload/v1760553824/uploads_besties/1760553776667Z2gawA4AW35j.mp4',
+        }}
+        loop
+        sharingAnimatedDuration={300}
+      />
 
       <Pressable onPress={freeze}>
         <Text>Freeze</Text>

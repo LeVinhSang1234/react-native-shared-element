@@ -14,6 +14,15 @@ import type { ShareViewNativeProps } from '../natives/ShareViewNativeComponent';
 import ShareViewNativeComponent, {
   Commands,
 } from '../natives/ShareViewNativeComponent';
+
+let useNavigationSafe;
+try {
+  const navigationModule = require('@react-navigation/native');
+  useNavigationSafe = navigationModule?.useNavigation;
+} catch (e) {
+  useNavigationSafe = () => null;
+}
+
 type TNativeRef = React.ComponentRef<typeof ShareViewNativeComponent>;
 
 export interface ShareViewProps extends ShareViewNativeProps {}
@@ -29,6 +38,18 @@ const ShareView = forwardRef<ShareViewRef, ShareViewProps>(
     const nativeRef = useRef<TNativeRef>(null);
     const [freeze, setFreeze] = useState(false);
     const refSize = useRef({ width: 0, height: 0 });
+
+    const navigation = useNavigationSafe();
+
+    useEffect(() => {
+      if (Platform.OS !== 'android' || !navigation) return;
+      const unsubscribe = navigation.addListener('beforeRemove', () => {
+        if (nativeRef.current) {
+          Commands.prepareForRecycle(nativeRef.current);
+        }
+      });
+      return unsubscribe;
+    }, [navigation]);
 
     const prepareForRecycle = useCallback(async () => {
       return new Promise(res => {

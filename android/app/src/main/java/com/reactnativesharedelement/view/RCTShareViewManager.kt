@@ -27,11 +27,9 @@ class RCTShareViewManager : ViewGroupManager<RCTShareView>() {
     }
 
     override fun removeViewAt(parent: RCTShareView, index: Int) {
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-            if(!parent.isDealloc) {
-                parent.viewContainer.removeViewAt(index)
-            }
-        }, 0)
+        if(!parent.isSharing) {
+            parent.viewContainer.removeViewAt(index)
+        }
     }
 
     override fun getChildCount(parent: RCTShareView): Int {
