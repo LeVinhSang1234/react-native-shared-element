@@ -10,6 +10,9 @@
 		0C80B921A6F3F58F76C31292 /* libPods-GalleryPicker.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-GalleryPicker.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		4F7CF65370B8C1946434E5E3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		758BA6D72EB2231400A32495 /* RCTGalleryView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 758BA6D62EB2231400A32495 /* RCTGalleryView.mm */; };
+		758BA6DA2EB2267000A32495 /* GalleryDataManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 758BA6D92EB2267000A32495 /* GalleryDataManager.m */; };
+		758BA6DC2EB226A300A32495 /* Photos.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 758BA6DB2EB226A300A32495 /* Photos.framework */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
@@ -22,6 +25,11 @@
 		3B4392A12AC88292D35C810B /* Pods-GalleryPicker.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GalleryPicker.debug.xcconfig"; path = "Target Support Files/Pods-GalleryPicker/Pods-GalleryPicker.debug.xcconfig"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-GalleryPicker.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-GalleryPicker.release.xcconfig"; path = "Target Support Files/Pods-GalleryPicker/Pods-GalleryPicker.release.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-GalleryPicker.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-GalleryPicker.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		758BA6D52EB222FE00A32495 /* RCTGalleryView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCTGalleryView.h; sourceTree = "<group>"; };
+		758BA6D62EB2231400A32495 /* RCTGalleryView.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RCTGalleryView.mm; sourceTree = "<group>"; };
+		758BA6D82EB2266600A32495 /* GalleryDataManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GalleryDataManager.h; sourceTree = "<group>"; };
+		758BA6D92EB2267000A32495 /* GalleryDataManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GalleryDataManager.m; sourceTree = "<group>"; };
+		758BA6DB2EB226A300A32495 /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = GalleryPicker/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = GalleryPicker/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -33,6 +41,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0C80B921A6F3F58F76C31292 /* libPods-GalleryPicker.a in Frameworks */,
+				758BA6DC2EB226A300A32495 /* Photos.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -54,10 +63,22 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				758BA6DB2EB226A300A32495 /* Photos.framework */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				5DCACB8F33CDC322A6C60F78 /* libPods-GalleryPicker.a */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		758BA6D42EB222E900A32495 /* Gallery */ = {
+			isa = PBXGroup;
+			children = (
+				758BA6D52EB222FE00A32495 /* RCTGalleryView.h */,
+				758BA6D62EB2231400A32495 /* RCTGalleryView.mm */,
+				758BA6D82EB2266600A32495 /* GalleryDataManager.h */,
+				758BA6D92EB2267000A32495 /* GalleryDataManager.m */,
+			);
+			path = Gallery;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -70,6 +91,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				758BA6D42EB222E900A32495 /* Gallery */,
 				13B07FAE1A68108700A75B9A /* GalleryPicker */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -131,7 +153,7 @@
 				LastUpgradeCheck = 1210;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						LastSwiftMigration = 1120;
+						LastSwiftMigration = 1620;
 					};
 				};
 			};
@@ -247,6 +269,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				758BA6DA2EB2267000A32495 /* GalleryDataManager.m in Sources */,
+				758BA6D72EB2231400A32495 /* RCTGalleryView.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,6 +284,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L3YUJ2X928;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = GalleryPicker/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -273,7 +298,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = test.gallerypicker;
 				PRODUCT_NAME = GalleryPicker;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -288,6 +313,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = L3YUJ2X928;
 				INFOPLIST_FILE = GalleryPicker/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -300,7 +326,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = test.gallerypicker;
 				PRODUCT_NAME = GalleryPicker;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
