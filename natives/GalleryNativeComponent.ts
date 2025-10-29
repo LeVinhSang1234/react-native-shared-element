@@ -28,15 +28,31 @@ export interface Photo {
 }
 
 /**
+ * Event data when an error occurs.
+ */
+export interface OnErrorData {
+  code:
+    | 'NOT_DETERMINED'
+    | 'RESTRICTED'
+    | 'DENIED'
+    | 'AUTHORIZED'
+    | 'LIMITED'
+    | 'UNKNOWN'; // Short error code, e.g. "NO_PERMISSION", "FETCH_FAILED"
+  message: string; // Human-readable error message
+}
+
+/**
  * Native component props for the Gallery view.
  */
 export interface GalleryNativeProps extends ViewProps {
-  onSelect?: DirectEventHandler<Photo>; // Triggered when a media item is selected
+  readonly onSelect?: DirectEventHandler<Photo>; // Triggered when a media item is selected
+  readonly onError?: DirectEventHandler<OnErrorData>; // Fires when a native error occurs
   readonly multiple?: boolean; // Allow selecting multiple items
   readonly maxFiles?: Double; // Maximum number of files selectable
-  readonly type?: string; // "image" | "video" | "all"
+  readonly type?: string; // "Image" | "Video" | "All"
   readonly maxSize?: Double; // Maximum file size (bytes)
   readonly maxDuration?: Double; // Maximum video duration (seconds)
+  readonly albumType?: string; //'Album' | 'SmartAlbum' | 'All'
 }
 
 interface NativeCommands {

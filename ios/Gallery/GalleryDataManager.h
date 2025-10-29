@@ -8,9 +8,18 @@
 #import <Photos/Photos.h>
 
 @interface GalleryDataManager : NSObject
-+ (NSArray<NSDictionary *> *)fetchAlbums:(BOOL)includeSmart
++ (NSArray<NSDictionary *> *)fetchAlbums:(NSString *)albumType
                                     type:(NSString *)type;
 
-+ (void)requestPhotoPermission:(void (^)(void))onGranted;
+/// Request permission to access Photos library.
+/// Calls `onGranted` on main thread when authorized or limited.
+/// Calls `onError` on main thread when denied or restricted.
++ (void)requestPhotoPermission:(void (^)(void))onGranted
+                       onError:(void (^)(NSString *code, NSString *message))onError;
+
++ (NSArray<PHAsset *> *)fetchPhotos:(NSString *)albumId
+                                    type:(NSString *)type
+                                 maxSize:(double)maxSize
+                             maxDuration:(double)maxDuration;
 
 @end

@@ -6,24 +6,32 @@
  */
 
 import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import GalleryPicker from './packages/GalleryPicker';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <SafeAreaProvider>
+    <View style={styles.container}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <AppContent />
-    </SafeAreaProvider>
+    </View>
   );
 }
 
 function AppContent() {
   return (
-    <View style={styles.container}>
-      <GalleryPicker />
+    <View
+      style={styles.container}
+      onLayout={e => console.log(e.nativeEvent.layout)}
+    >
+      <GalleryPicker
+        onLayout={e => console.log('asdasa', e.nativeEvent.layout)}
+        style={styles.container}
+        onError={e => {
+          console.log(e.nativeEvent);
+        }}
+      />
     </View>
   );
 }
@@ -31,6 +39,7 @@ function AppContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'white',
   },
 });
 
