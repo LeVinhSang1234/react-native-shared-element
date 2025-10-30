@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -36,7 +36,28 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		BF4CE42D2EB29459007EF1C1 /* view */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = view; sourceTree = "<group>"; };
+		75DE3F882EB3246C00E1EEC1 /* helpers */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = helpers;
+			sourceTree = "<group>";
+		};
+		BF4CE42D2EB29459007EF1C1 /* view */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = view;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +98,7 @@
 		758BA6D42EB222E900A32495 /* Gallery */ = {
 			isa = PBXGroup;
 			children = (
+				75DE3F882EB3246C00E1EEC1 /* helpers */,
 				BF4CE42D2EB29459007EF1C1 /* view */,
 				758BA6D52EB222FE00A32495 /* RCTGalleryView.h */,
 				758BA6D62EB2231400A32495 /* RCTGalleryView.mm */,
@@ -145,6 +167,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
+				75DE3F882EB3246C00E1EEC1 /* helpers */,
 				BF4CE42D2EB29459007EF1C1 /* view */,
 			);
 			name = GalleryPicker;
@@ -221,13 +244,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-GalleryPicker/Pods-GalleryPicker-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-GalleryPicker/Pods-GalleryPicker-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -264,13 +283,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-GalleryPicker/Pods-GalleryPicker-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-GalleryPicker/Pods-GalleryPicker-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

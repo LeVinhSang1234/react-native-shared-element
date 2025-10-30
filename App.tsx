@@ -21,13 +21,10 @@ function App() {
 
 function AppContent() {
   return (
-    <View
-      style={styles.container}
-      onLayout={e => console.log(e.nativeEvent.layout)}
-    >
+    <View style={styles.container}>
       <GalleryPicker
-        onLayout={e => console.log('asdasa', e.nativeEvent.layout)}
-        style={styles.container}
+        allowMultiple
+        style={{ flex: 1 }}
         onError={e => {
           console.log(e.nativeEvent);
         }}
@@ -37,10 +34,7 @@ function AppContent() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
+  container: { flex: 1, paddingTop: 20 },
 });
 
 export default App;

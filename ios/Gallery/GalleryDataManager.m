@@ -2,32 +2,27 @@
 //  GalleryDataManager.m
 //  GalleryPicker
 //
-//  Created by Sang Le vinh on 10/29/25.
+//  Created by Sang Le Vinh on 10/29/25.
 //
 
 #import "GalleryDataManager.h"
 
+#pragma mark - 🔹 Helper
 
 static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus status) {
   switch (status) {
-    case PHAuthorizationStatusNotDetermined:
-      return @"NOT_DETERMINED";
-    case PHAuthorizationStatusRestricted:
-      return @"RESTRICTED";
-    case PHAuthorizationStatusDenied:
-      return @"DENIED";
-    case PHAuthorizationStatusAuthorized:
-      return @"AUTHORIZED";
-    case PHAuthorizationStatusLimited:
-      return @"LIMITED";
-    default:
-      return @"UNKNOWN";
+    case PHAuthorizationStatusNotDetermined: return @"NOT_DETERMINED";
+    case PHAuthorizationStatusRestricted:    return @"RESTRICTED";
+    case PHAuthorizationStatusDenied:        return @"DENIED";
+    case PHAuthorizationStatusAuthorized:    return @"AUTHORIZED";
+    case PHAuthorizationStatusLimited:       return @"LIMITED";
+    default:                                 return @"UNKNOWN";
   }
 }
 
 @implementation GalleryDataManager
 
-#pragma mark - PERMISSION
+#pragma mark - 🔐 PHOTO PERMISSION
 
 + (void)requestPhotoPermission:(void (^)(void))onGranted
                        onError:(void (^)(NSString *code, NSString *message))onError
@@ -51,11 +46,7 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
   switch (status) {
     case PHAuthorizationStatusAuthorized:
     case PHAuthorizationStatusLimited:
-      if (onGranted) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-          onGranted();
-        });
-      }
+      if (onGranted) dispatch_async(dispatch_get_main_queue(), onGranted);
       break;
       
     case PHAuthorizationStatusNotDetermined: {
@@ -64,9 +55,7 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
                                                    handler:^(PHAuthorizationStatus newStatus) {
           if (newStatus == PHAuthorizationStatusAuthorized ||
               newStatus == PHAuthorizationStatusLimited) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-              if (onGranted) onGranted();
-            });
+            dispatch_async(dispatch_get_main_queue(), onGranted);
           } else {
             emitError(newStatus, @"User denied access to photo library.");
           }
@@ -74,9 +63,7 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
       } else {
         [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus newStatus) {
           if (newStatus == PHAuthorizationStatusAuthorized) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-              if (onGranted) onGranted();
-            });
+            dispatch_async(dispatch_get_main_queue(), onGranted);
           } else {
             emitError(newStatus, @"User denied access to photo library.");
           }
@@ -95,15 +82,38 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
   }
 }
 
-#pragma mark - ALBUMS
+#pragma mark - 📁 CACHE MANAGEMENT
+
++ (NSString *)cacheDirectory {
+  NSString *base = NSTemporaryDirectory();
+  NSString *dir = [base stringByAppendingPathComponent:@"gallery_cache"];
+  NSFileManager *fm = [NSFileManager defaultManager];
+  if (![fm fileExistsAtPath:dir]) {
+    [fm createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+  }
+  return dir;
+}
+
++ (void)clearCache {
+  NSString *cacheDir = [self cacheDirectory];
+  NSFileManager *fm = [NSFileManager defaultManager];
+  if ([fm fileExistsAtPath:cacheDir]) {
+    NSError *err = nil;
+    [fm removeItemAtPath:cacheDir error:&err];
+    if (err) {
+      NSLog(@"[GalleryDataManager] Failed to clear cache: %@", err.localizedDescription);
+    }
+  }
+}
+
+#pragma mark - 📸 FETCH ALBUMS
 
 + (NSArray<NSDictionary *> *)fetchAlbums:(NSString *)albumType
                                     type:(NSString *)type
 {
   NSMutableArray<NSDictionary *> *albums = [NSMutableArray array];
-  
-  // 1️⃣ Filter by media type
   PHFetchOptions *fetchOptions = [PHFetchOptions new];
+  
   if ([type isEqualToString:@"image"]) {
     fetchOptions.predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeImage];
   } else if ([type isEqualToString:@"video"]) {
@@ -113,17 +123,13 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
   BOOL includeUserAlbums = ![albumType isEqualToString:@"SmartAlbum"];
   BOOL includeSmartAlbums = ![albumType isEqualToString:@"Album"];
   
-  // 2️⃣ Helper block: process album collections
   void (^processCollections)(PHFetchResult<PHAssetCollection *> *, BOOL) =
   ^(PHFetchResult<PHAssetCollection *> *collections, BOOL isSmart) {
-    
     for (PHAssetCollection *collection in collections) {
       PHFetchResult<PHAsset *> *assets =
       [PHAsset fetchAssetsInAssetCollection:collection options:fetchOptions];
-      
       if (assets.count == 0) continue;
       
-      // Lấy asset mới nhất (thumbnail)
       PHAsset *asset = assets.firstObject;
       if (!asset) continue;
       
@@ -131,7 +137,7 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
       PHImageRequestOptions *opts = [PHImageRequestOptions new];
       opts.deliveryMode = PHImageRequestOptionsDeliveryModeFastFormat;
       opts.resizeMode = PHImageRequestOptionsResizeModeFast;
-      opts.synchronous = YES; // load nhanh trong background, không block UI
+      opts.synchronous = YES;
       
       CGSize targetSize = CGSizeMake(200, 200);
       [[PHImageManager defaultManager] requestImageForAsset:asset
@@ -149,12 +155,12 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
         @"title": collection.localizedTitle ?: @"",
         @"count": @(assets.count),
         @"isSmart": @(isSmart),
-        @"thumbnail": thumbnail
+        @"thumbnail": thumbnail,
+        @"collection": collection
       }];
     }
   };
   
-  // 3️⃣ User albums
   if (includeUserAlbums) {
     PHFetchResult<PHAssetCollection *> *userAlbums =
     [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeAlbum
@@ -163,7 +169,6 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
     processCollections(userAlbums, NO);
   }
   
-  // 4️⃣ Smart albums
   if (includeSmartAlbums) {
     PHFetchResult<PHAssetCollection *> *smartAlbums =
     [PHAssetCollection fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
@@ -172,7 +177,6 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
     processCollections(smartAlbums, YES);
   }
   
-  // 5️⃣ Sort descending by number of items
   [albums sortUsingComparator:^NSComparisonResult(NSDictionary *a, NSDictionary *b) {
     return [b[@"count"] compare:a[@"count"]];
   }];
@@ -180,61 +184,120 @@ static NSString *GalleryStringFromAuthorizationStatus(PHAuthorizationStatus stat
   return albums;
 }
 
+#pragma mark - 🖼️ FETCH PHOTOS
+
 + (NSArray<PHAsset *> *)fetchPhotos:(NSString *)albumId
                                type:(NSString *)type
                             maxSize:(double)maxSize
                         maxDuration:(double)maxDuration
 {
   NSMutableArray<PHAsset *> *result = [NSMutableArray array];
-
-  // 1️⃣ Tìm album theo id
   PHFetchResult<PHAssetCollection *> *collections =
-    [PHAssetCollection fetchAssetCollectionsWithLocalIdentifiers:@[albumId]
-                                                         options:nil];
-  if (collections.count == 0) {
-    return result;
-  }
-
+  [PHAssetCollection fetchAssetCollectionsWithLocalIdentifiers:@[albumId] options:nil];
+  
+  if (collections.count == 0) return result;
   PHAssetCollection *album = collections.firstObject;
-
-  // 2️⃣ Filter theo type (image/video/all)
+  
   PHFetchOptions *options = [PHFetchOptions new];
   if ([type isEqualToString:@"image"]) {
     options.predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeImage];
   } else if ([type isEqualToString:@"video"]) {
     options.predicate = [NSPredicate predicateWithFormat:@"mediaType == %d", PHAssetMediaTypeVideo];
   }
-
-  // 3️⃣ Fetch assets trong album
+  
   PHFetchResult<PHAsset *> *assets = [PHAsset fetchAssetsInAssetCollection:album options:options];
-
-  // 4️⃣ Lọc theo maxSize / maxDuration
   [assets enumerateObjectsUsingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop) {
-
-    // Filter video duration
-    if (asset.mediaType == PHAssetMediaTypeVideo && maxDuration > 0 && asset.duration > maxDuration) {
-      return;
-    }
-
-    // Filter file size (approx via PHAssetResource)
+    if (asset.mediaType == PHAssetMediaTypeVideo && maxDuration > 0 && asset.duration > maxDuration) return;
     if (maxSize > 0) {
       NSArray *resources = [PHAssetResource assetResourcesForAsset:asset];
       PHAssetResource *res = resources.firstObject;
       long long fileSize = [[res valueForKey:@"fileSize"] longLongValue];
-      if (fileSize > maxSize) {
-        return;
-      }
+      if (fileSize > maxSize) return;
     }
-
     [result addObject:asset];
   }];
-
-  // 5️⃣ Sort newest first
+  
   [result sortUsingComparator:^NSComparisonResult(PHAsset *a, PHAsset *b) {
     return [b.creationDate compare:a.creationDate];
   }];
-
+  
   return result;
+}
+
+#pragma mark - 🔗 ASSET URI
+
++ (NSString *)uriForAsset:(PHAsset *)asset {
+  if (!asset) return nil;
+  
+  __block NSString *uri = nil;
+  PHImageManager *manager = [PHImageManager defaultManager];
+  NSString *cacheDir = [self cacheDirectory];
+  NSFileManager *fm = [NSFileManager defaultManager];
+  
+  if (asset.mediaType == PHAssetMediaTypeImage) {
+    NSString *tempFile = [cacheDir stringByAppendingPathComponent:
+                          [NSString stringWithFormat:@"%@.jpg", asset.localIdentifier]];
+    if ([fm fileExistsAtPath:tempFile]) {
+      return [NSString stringWithFormat:@"file://%@", tempFile];
+    }
+    
+    PHImageRequestOptions *options = [PHImageRequestOptions new];
+    options.synchronous = YES;
+    options.networkAccessAllowed = YES;
+    
+    [manager requestImageDataAndOrientationForAsset:asset
+                                            options:options
+                                      resultHandler:^(NSData *data,
+                                                      NSString *UTI,
+                                                      CGImagePropertyOrientation orientation,
+                                                      NSDictionary *info) {
+      NSURL *fileURL = info[@"PHImageFileURLKey"];
+      if (fileURL) {
+        uri = fileURL.absoluteString;
+      } else if (data) {
+        [data writeToFile:tempFile atomically:YES];
+        uri = [NSString stringWithFormat:@"file://%@", tempFile];
+      }
+    }];
+  } else if (asset.mediaType == PHAssetMediaTypeVideo) {
+    NSString *tempFile = [cacheDir stringByAppendingPathComponent:
+                          [NSString stringWithFormat:@"%@.mov", asset.localIdentifier]];
+    if ([fm fileExistsAtPath:tempFile]) {
+      return [NSString stringWithFormat:@"file://%@", tempFile];
+    }
+    
+    PHVideoRequestOptions *options = [PHVideoRequestOptions new];
+    options.networkAccessAllowed = YES;
+    options.deliveryMode = PHVideoRequestOptionsDeliveryModeAutomatic;
+    
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    [manager requestAVAssetForVideo:asset
+                            options:options
+                      resultHandler:^(AVAsset *avAsset, AVAudioMix *audioMix, NSDictionary *info) {
+      if ([avAsset isKindOfClass:[AVURLAsset class]]) {
+        NSURL *url = [(AVURLAsset *)avAsset URL];
+        if (url) uri = url.absoluteString;
+      } else {
+        NSURL *tempURL = [NSURL fileURLWithPath:tempFile];
+        AVAssetExportSession *exportSession =
+        [[AVAssetExportSession alloc] initWithAsset:avAsset presetName:AVAssetExportPresetPassthrough];
+        exportSession.outputURL = tempURL;
+        exportSession.outputFileType = AVFileTypeQuickTimeMovie;
+        
+        [exportSession exportAsynchronouslyWithCompletionHandler:^{
+          if (exportSession.status == AVAssetExportSessionStatusCompleted) {
+            uri = tempURL.absoluteString;
+          }
+          dispatch_semaphore_signal(sema);
+        }];
+        dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+      }
+      dispatch_semaphore_signal(sema);
+    }];
+    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+  }
+  
+  return uri;
 }
 
 @end

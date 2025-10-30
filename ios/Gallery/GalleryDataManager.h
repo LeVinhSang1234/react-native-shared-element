@@ -22,4 +22,8 @@
                                  maxSize:(double)maxSize
                              maxDuration:(double)maxDuration;
 
++ (NSString *)uriForAsset:(PHAsset *)asset;
+
++ (void)clearCache;
+
 @end

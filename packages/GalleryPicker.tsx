@@ -6,20 +6,29 @@ import type { GalleryNativeProps } from '../natives/GalleryNativeComponent';
 
 type TNativeRef = React.ComponentRef<typeof GalleryNativeComponent>;
 
-interface GalleryProps
-  extends Omit<GalleryNativeProps, 'children' | 'type' | 'albumType'> {
-  type?: 'Video' | 'Image' | 'All';
+export interface GalleryPickerProps
+  extends Omit<
+    GalleryNativeProps,
+    'children' | 'type' | 'albumType' | 'allowOnSelects'
+  > {
+  type?: 'video' | 'image' | 'all';
   albumType?: 'Album' | 'SmartAlbum' | 'All';
 }
 
-function GalleryPicker(props: GalleryProps) {
+function GalleryPicker(props: GalleryPickerProps) {
   const nativeRef = useRef<TNativeRef>(null);
 
   useEffect(() => {
     if (nativeRef.current) Commands.initialize(nativeRef.current);
   }, []);
 
-  return <GalleryNativeComponent {...props} ref={nativeRef} />;
+  return (
+    <GalleryNativeComponent
+      {...props}
+      ref={nativeRef}
+      allowOnSelects={!!props.onSelects}
+    />
+  );
 }
 
 export default GalleryPicker;
